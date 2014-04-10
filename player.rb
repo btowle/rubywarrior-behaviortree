@@ -2,9 +2,15 @@ load(File.dirname(__FILE__)+"/behaviortree.rb")
 
 class Player
   def initialize
-    @sludge_damage = 6
+    @last_health = 20
 
-    @behavior = BehaviorTree::Priority.new()
+    @damage = {
+      :sludge => 6,
+      :thick_sludge => 12,
+      :archer => 6
+    }
+
+    @behavior = BehaviorTree::Priority.new
     
     @behavior.add_child! attack_tree
     @behavior.add_child! rest_tree
@@ -12,47 +18,71 @@ class Player
   end
 
   def play_turn(warrior)
-    @behavior.run(warrior)
+    @warrior = warrior
+    @behavior.run()
+    @last_health = warrior.health
+  end
+
+  def safe?
+    @warrior.health >= @last_health
   end
 
   def rest_tree
-    rest_tree = BehaviorTree::Sequencer.new()
-    rest_tree.add_child! BehaviorTree::Condition.new(->(warrior){
-      return :failure if warrior.health > @sludge_damage
+    rest = BehaviorTree::Sequencer.new
+    #if can't survive a fight with thick_sludge
+    rest.add_condition! ->{
+      return :failure if @warrior.health > @damage[:thick_sludge]
 
       :success
-    })
-    rest_tree.add_child! BehaviorTree::Action.new(->(warrior){
-      warrior.rest!
+    }
+    #if safe
+    rest.add_condition! ->{
+      return :success if safe?
+
+      :failure
+    }
+    #rest!
+    rest.add_action! ->{
+      puts "resting"
+      @warrior.rest!
 
       :success
-    })
+    }
 
-    rest_tree
+    rest
   end
 
   def attack_tree
-    attack_tree = BehaviorTree::Sequencer.new()
-    attack_tree.add_child! BehaviorTree::Condition.new(->(warrior){
-      return :failure if warrior.feel.empty?
+    attack = BehaviorTree::Sequencer.new
+
+    #if the space is not empty
+    attack.add_condition! ->{
+      return :failure if @warrior.feel.empty?
 
       :success
-    })
-    attack_tree.add_child! BehaviorTree::Action.new(->(warrior){
-      warrior.attack!
+    }
+
+    #attack!
+    attack.add_action! ->{
+      puts "attacking"
+      @warrior.attack!
       
       :success
-    })
+    }
 
-    attack_tree
+    attack
   end
 
   def walk_tree
-    @behavior.add_child! BehaviorTree::Action.new(->(warrior){
-      warrior.walk!
-      
-      :success
-    })
+    walk = BehaviorTree::Sequencer.new
+    #walk foward
+    walk.add_action! ->{
+      puts "walking"
+      @warrior.walk!
 
+      :success
+    }
+
+    walk
   end
 end

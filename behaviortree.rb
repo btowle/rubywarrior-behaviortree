@@ -9,10 +9,10 @@ module BehaviorTree
       @children.push child
     end
 
-    def run(warrior)
+    def run()
       return :error if @children.count <= 0
       @children[@last_run_child..-1].each_with_index do |child, index|
-        child_state = child.run(warrior)
+        child_state = child.run()
         if child_state == :running then
           @last_run_child = index
           return :running
@@ -21,6 +21,22 @@ module BehaviorTree
       end
 
       @default_return_state
+    end
+
+    def add_action!(action,condition=nil)
+      add_child! new_action(action, condition)
+    end
+
+    def add_condition!(test)
+      add_child! new_condition(test)
+    end
+
+    def new_action(action,condition=nil)
+      return BehaviorTree::Action.new(action,condition)
+    end
+
+    def new_condition(test)
+      return BehaviorTree::Action.new(test)
     end
   end
 
@@ -45,9 +61,10 @@ module BehaviorTree
   end
 
   module Leaf
-    def run(warrior)
-      return @test.(warrior) if @action.nil?
-      return @action.(warrior) if @test.nil? || @test.(warrior) == :success
+    def run
+      return @test.() if @action.nil?
+      return @action.() if @test.nil? || @test.()
+
       :failure
     end
   end
