@@ -109,7 +109,7 @@ class Player
     shoot = BehaviorTree::Sequencer.new
 
     shoot.add_condition! -> {
-      @warrior.look.each { |space|
+      @warrior.look(@direction).each { |space|
         return :failure if space.captive?
         return :success if space.enemy?
       }
@@ -118,7 +118,7 @@ class Player
     }
 
     shoot.add_action! -> {
-      @warrior.shoot!
+      @warrior.shoot! @direction
 
       :success
     }
