@@ -11,7 +11,7 @@ class Player
     @damage = {
       :sludge => 6,
       :thick_sludge => 12,
-      :archer => 11
+      :archer => 6
     }
 
     @behavior = BehaviorTree::Priority.new
@@ -34,7 +34,6 @@ class Player
     @warrior.look(@direction).each_with_index { |space,index|
       if space.to_s.match(/Ar/) then
         @distance_to_archer = index
-        puts @distance_to_archer
         return false
       end
     }
@@ -117,16 +116,20 @@ class Player
   def shoot_tree
     shoot = BehaviorTree::Sequencer.new
 
-    shoot.add_condition! -> {
+    shoot.add_condition! ->{
       @warrior.look(@direction).each { |space|
-        return :failure if space.to_s.match(/Ca|Sl|Th|Ar/)
+        return :failure if space.to_s.match(/Ca|Sl|Th/)
         return :success if space.enemy? && space.to_s.match(/Wi/)
+        return :success if space.enemy? && 
+                           space.to_s.match(/Ar/) && 
+                           @warrior.health > @damage[:archer] && 
+                           @distance_to_archer > 1
       }
 
       :failure
     }
 
-    shoot.add_action! -> {
+    shoot.add_action! ->{
       @warrior.shoot! @direction
 
       :success
