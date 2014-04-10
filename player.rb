@@ -2,12 +2,14 @@ load(File.dirname(__FILE__)+"/behaviortree.rb")
 
 class Player
   def initialize
-    @last_health = 20
+    @direction = :backward
+
+    @max_health = @last_health = 20
 
     @damage = {
       :sludge => 6,
       :thick_sludge => 12,
-      :archer => 6
+      :archer => 11
     }
 
     @behavior = BehaviorTree::Priority.new
@@ -33,13 +35,13 @@ class Player
 
     #if the space has a captive
     rescue_captive.add_condition! ->{
-      return :success if @warrior.feel.captive?
+      return :success if @warrior.feel(@direction).captive?
 
       :failure
     }
     #rescue!
     rescue_captive.add_action! ->{
-      @warrior.rescue!
+      @warrior.rescue! @direction
 
       :success
     }
@@ -52,14 +54,14 @@ class Player
 
     #if the space is not empty
     attack.add_condition! ->{
-      return :failure if @warrior.feel.empty?
+      return :success if @warrior.feel(@direction).enemy?
 
-      :success
+      :failure
     }
 
     #attack!
     attack.add_action! ->{
-      @warrior.attack!
+      @warrior.attack! @direction
       
       :success
     }
@@ -69,11 +71,11 @@ class Player
 
   def rest_tree
     rest = BehaviorTree::Sequencer.new
-    #if can't survive a fight with thick_sludge
+    #if not at max health
     rest.add_condition! ->{
-      return :failure if @warrior.health > @damage[:thick_sludge]
+      return :success if @warrior.health < @max_health
 
-      :success
+      :failure
     }
     #if safe
     rest.add_condition! ->{
@@ -92,14 +94,61 @@ class Player
   end
 
   def walk_tree
-    walk = BehaviorTree::Sequencer.new
-    #walk foward
+    walk = BehaviorTree::Priority.new
+
+    change_direction = BehaviorTree::Sequencer.new
+    #if there is a wall
+    change_direction.add_condition! ->{
+      return :success if @warrior.feel(@direction).wall?
+
+      :failure
+    }
+    #change_direction
+    change_direction.add_action! ->{
+      @direction = opposite_direction
+
+      :success
+    }
+    walk.add_child! change_direction
+
+    retreat = BehaviorTree::Sequencer.new
+    #if not safe
+    retreat.add_condition! ->{
+      return :failure if safe?
+
+      :success
+    }
+    #if weaker than an archer
+    retreat.add_condition! ->{
+      return :success if @warrior.health < @damage[:archer]
+
+      :failure
+    }
+    #step back
+    retreat.add_action! ->{
+      @warrior.walk! opposite_direction
+    }
+
+    walk.add_child! retreat
+
+    #walk direction
     walk.add_action! ->{
-      @warrior.walk!
+      @warrior.walk! @direction
 
       :success
     }
 
+
+
     walk
+  end
+
+  def opposite_direction
+    case @direction
+    when :forward
+      return :backward
+    else
+      return :forward
+    end
   end
 end
