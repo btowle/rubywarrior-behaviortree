@@ -7,6 +7,7 @@ class Player
     @max_health = @last_health = 20
 
     @distance_to_archer = 100
+    @archer_melee_range = 1
 
     @damage = {
       :sludge => 6,
@@ -16,7 +17,7 @@ class Player
     }
 
     @behavior = BehaviorTree::Priority.new
-    
+
     @behavior.add_child! rescue_tree
     @behavior.add_child! melee_tree
     @behavior.add_child! rest_tree
@@ -31,25 +32,45 @@ class Player
   end
 
   def safe?
-    @warrior.health >= @last_health
     @warrior.look(@direction).each_with_index { |space,index|
       if space.to_s.match(/Ar/) then
         @distance_to_archer = index
         return false
       end
     }
+
+    true
+  end
+
+  def in_danger?
+    !safe?
+  end
+
+  def healthy?
+    @warrior.health > @damage.values.max
+  end
+
+  def weak?
+    !healthy?
+  end
+
+  def can_fight?(enemy)
+    @warrior.health > @damage[enemy]
+  end
+
+  def about_face!
+    @warrior.pivot! @direction
+    @direction = :forward
   end
 
   def rescue_tree
     rescue_captive = BehaviorTree::Sequencer.new
 
-    #if the space has a captive
     rescue_captive.add_condition! ->{
       return :success if @warrior.feel(@direction).captive?
 
       :failure
     }
-    #rescue!
     rescue_captive.add_action! ->{
       @warrior.rescue! @direction
 
@@ -59,52 +80,52 @@ class Player
     rescue_captive
   end
 
-  def melee_tree
-    melee = BehaviorTree::Sequencer.new
-
-    #if the space is not empty
-    melee.add_condition! ->{
-      return :success if @warrior.feel(@direction).enemy?
-
-      :failure
-    }
-    #turn to face enemy!
+  def turn_or_melee_tree
     turn_or_melee = BehaviorTree::Priority.new
-    turn_or_melee.add_action! ->{
-      if @direction != :forward then
-        @warrior.pivot! @direction
-        @direction = :forward
-        return :success
-      end
 
-      :failure
+    turn_or_melee.add_action! ->{
+      return :failure if @direction == :forward
+      about_face!
+
+      :success
     }
-    #melee!
+
     turn_or_melee.add_action! ->{
       @warrior.attack! @direction
       
       :success
     }
-    melee.add_child! turn_or_melee
+
+    turn_or_melee
+  end
+
+  def melee_tree
+    melee = BehaviorTree::Sequencer.new
+
+    melee.add_condition! ->{
+      return :success if @warrior.feel(@direction).enemy?
+
+      :failure
+    }
+
+    melee.add_child! turn_or_melee_tree
 
     melee
   end
 
   def rest_tree
     rest = BehaviorTree::Sequencer.new
-    #if not at max health
+
     rest.add_condition! ->{
-      return :success if @warrior.health <= @damage.values.max
+      return :success if weak?
 
       :failure
     }
-    #if safe
     rest.add_condition! ->{
       return :success if safe?
 
       :failure
     }
-    #rest!
     rest.add_action! ->{
       @warrior.rest!
 
@@ -119,12 +140,11 @@ class Player
 
     shoot.add_condition! ->{
       @warrior.look(@direction).each { |space|
-        return :failure if space.to_s.match(/Ca|^Sl/)
-        return :success if space.enemy? && space.to_s.match(/Wi|Th/)
-        return :success if space.enemy? && 
-                           space.to_s.match(/Ar/) && 
-                           @warrior.health > @damage[:archer] && 
-                           @distance_to_archer > 1
+        return :success if space.to_s.match(/^Wi|^Th/)
+        return :success if space.to_s.match(/^Ar/) && 
+                           can_fight?(:archer) && 
+                           @distance_to_archer > @archer_melee_range
+        return :failure if space.to_s.match(/^Ca|^Sl/)
       }
 
       :failure
@@ -139,58 +159,57 @@ class Player
     shoot
   end
 
-  def walk_tree
-    walk = BehaviorTree::Priority.new
-
+  def change_direction_tree
     change_direction = BehaviorTree::Sequencer.new
-    #if there is a wall
     change_direction.add_condition! ->{
       return :success if @warrior.feel(@direction).wall?
 
       :failure
     }
-    #change_direction
     change_direction.add_action! ->{
       @direction = opposite_direction
 
       :success
     }
-    walk.add_child! change_direction
+    
+    change_direction
+  end
 
+  def retreat_tree
     retreat = BehaviorTree::Sequencer.new
-    #if not safe
     retreat.add_condition! ->{
-      return :failure if safe?
-
-      :success
-    }
-    #if weaker than an archer
-    retreat.add_condition! ->{
-      return :success if @warrior.health < @damage[:archer]
+      return :success if in_danger?
 
       :failure
     }
-    #if there is room to walk back
     retreat.add_condition! ->{
-      @warrior.look(opposite_direction)[0..2-@distance_to_archer].each { |space|
-        return :failure if space.wall?
-      }
+      return :success if !can_fight?(:archer)
+
+      :failure
     }
-    #step back
+    retreat.add_condition! ->{
+      return :failure if @warrior.feel(opposite_direction).wall?
+
+      :success
+    }
     retreat.add_action! ->{
       @warrior.walk! opposite_direction
     }
 
-    walk.add_child! retreat
+    retreat
+  end
 
-    #walk direction
+  def walk_tree
+    walk = BehaviorTree::Priority.new
+
+    walk.add_child! change_direction_tree
+    walk.add_child! retreat_tree
+
     walk.add_action! ->{
       @warrior.walk! @direction
 
       :success
     }
-
-
 
     walk
   end
