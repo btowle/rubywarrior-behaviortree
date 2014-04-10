@@ -9,7 +9,7 @@ module BehaviorTree
       @children.push child
     end
 
-    def run()
+    def run
       return :error if @children.count <= 0
       @children[@last_run_child..-1].each_with_index do |child, index|
         child_state = child.run()
