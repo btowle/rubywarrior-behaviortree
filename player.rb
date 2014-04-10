@@ -58,13 +58,24 @@ class Player
 
       :failure
     }
+    #turn to face enemy!
+    turn_or_attack = BehaviorTree::Priority.new
+    turn_or_attack.add_action! ->{
+      if @direction != :forward then
+        @warrior.pivot! @direction
+        @direction = :forward
+        return :success
+      end
 
+      :failure
+    }
     #attack!
-    attack.add_action! ->{
+    turn_or_attack.add_action! ->{
       @warrior.attack! @direction
       
       :success
     }
+    attack.add_child! turn_or_attack
 
     attack
   end
