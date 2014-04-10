@@ -11,7 +11,8 @@ class Player
     @damage = {
       :sludge => 6,
       :archer => 6,
-      :thick_sludge => 13
+      :thick_sludge => 0,
+      :wizard => 0
     }
 
     @behavior = BehaviorTree::Priority.new
@@ -93,7 +94,7 @@ class Player
     rest = BehaviorTree::Sequencer.new
     #if not at max health
     rest.add_condition! ->{
-      return :success if @warrior.health < @damage.values.max
+      return :success if @warrior.health <= @damage.values.max
 
       :failure
     }
@@ -118,8 +119,8 @@ class Player
 
     shoot.add_condition! ->{
       @warrior.look(@direction).each { |space|
-        return :failure if space.to_s.match(/Ca|Sl|Th/)
-        return :success if space.enemy? && space.to_s.match(/Wi/)
+        return :failure if space.to_s.match(/Ca|^Sl/)
+        return :success if space.enemy? && space.to_s.match(/Wi|Th/)
         return :success if space.enemy? && 
                            space.to_s.match(/Ar/) && 
                            @warrior.health > @damage[:archer] && 
