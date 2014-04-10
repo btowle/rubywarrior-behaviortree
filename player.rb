@@ -6,6 +6,8 @@ class Player
 
     @max_health = @last_health = 20
 
+    @distance_to_archer = 100
+
     @damage = {
       :sludge => 6,
       :thick_sludge => 12,
@@ -29,6 +31,13 @@ class Player
 
   def safe?
     @warrior.health >= @last_health
+    @warrior.look(@direction).each_with_index { |space,index|
+      if space.to_s.match(/Ar/) then
+        @distance_to_archer = index
+        puts @distance_to_archer
+        return false
+      end
+    }
   end
 
   def rescue_tree
@@ -72,7 +81,7 @@ class Player
     }
     #melee!
     turn_or_melee.add_action! ->{
-      @warrior.melee! @direction
+      @warrior.attack! @direction
       
       :success
     }
@@ -110,8 +119,8 @@ class Player
 
     shoot.add_condition! -> {
       @warrior.look(@direction).each { |space|
-        return :failure if space.captive?
-        return :success if space.enemy?
+        return :failure if space.to_s.match(/Ca|Sl|Th|Ar/)
+        return :success if space.enemy? && space.to_s.match(/Wi/)
       }
 
       :failure
@@ -156,6 +165,12 @@ class Player
       return :success if @warrior.health < @damage[:archer]
 
       :failure
+    }
+    #if there is room to walk back
+    retreat.add_condition! ->{
+      @warrior.look(opposite_direction)[0..2-@distance_to_archer].each { |space|
+        return :failure if space.wall?
+      }
     }
     #step back
     retreat.add_action! ->{
