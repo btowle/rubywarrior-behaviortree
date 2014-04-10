@@ -15,8 +15,9 @@ class Player
     @behavior = BehaviorTree::Priority.new
     
     @behavior.add_child! rescue_tree
-    @behavior.add_child! attack_tree
+    @behavior.add_child! melee_tree
     @behavior.add_child! rest_tree
+    @behavior.add_child! shoot_tree
     @behavior.add_child! walk_tree
   end
 
@@ -49,18 +50,18 @@ class Player
     rescue_captive
   end
 
-  def attack_tree
-    attack = BehaviorTree::Sequencer.new
+  def melee_tree
+    melee = BehaviorTree::Sequencer.new
 
     #if the space is not empty
-    attack.add_condition! ->{
+    melee.add_condition! ->{
       return :success if @warrior.feel(@direction).enemy?
 
       :failure
     }
     #turn to face enemy!
-    turn_or_attack = BehaviorTree::Priority.new
-    turn_or_attack.add_action! ->{
+    turn_or_melee = BehaviorTree::Priority.new
+    turn_or_melee.add_action! ->{
       if @direction != :forward then
         @warrior.pivot! @direction
         @direction = :forward
@@ -69,15 +70,15 @@ class Player
 
       :failure
     }
-    #attack!
-    turn_or_attack.add_action! ->{
-      @warrior.attack! @direction
+    #melee!
+    turn_or_melee.add_action! ->{
+      @warrior.melee! @direction
       
       :success
     }
-    attack.add_child! turn_or_attack
+    melee.add_child! turn_or_melee
 
-    attack
+    melee
   end
 
   def rest_tree
@@ -102,6 +103,27 @@ class Player
     }
 
     rest
+  end
+
+  def shoot_tree
+    shoot = BehaviorTree::Sequencer.new
+
+    shoot.add_condition! -> {
+      @warrior.look.each { |space|
+        return :failure if space.captive?
+        return :success if space.enemy?
+      }
+
+      :failure
+    }
+
+    shoot.add_action! -> {
+      @warrior.shoot!
+
+      :success
+    }
+
+    shoot
   end
 
   def walk_tree
