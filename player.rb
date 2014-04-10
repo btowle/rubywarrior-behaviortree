@@ -10,8 +10,8 @@ class Player
 
     @damage = {
       :sludge => 6,
-      :thick_sludge => 12,
-      :archer => 6
+      :archer => 6,
+      :thick_sludge => 13
     }
 
     @behavior = BehaviorTree::Priority.new
@@ -93,7 +93,7 @@ class Player
     rest = BehaviorTree::Sequencer.new
     #if not at max health
     rest.add_condition! ->{
-      return :success if @warrior.health < @max_health
+      return :success if @warrior.health < @damage.values.max
 
       :failure
     }
