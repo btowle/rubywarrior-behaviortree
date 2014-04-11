@@ -171,7 +171,17 @@ class Player
 
       :success
     }
+
+    shoot_or_walk = BehaviorTree::Priority.new
+    shoot_or_walk.add_child! shoot_tree
+    shoot_or_walk.add_action! ->{
+      @warrior.walk!
+
+      :success
+    }
     
+    change_direction.add_child! shoot_or_walk
+
     change_direction
   end
 
