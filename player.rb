@@ -35,14 +35,18 @@ class Player
   end
 
   def safe?
+    !near_archer?
+  end
+
+  def near_archer?
     @warrior.look(@direction).each_with_index { |space,index|
       if space.to_s.match(/Ar/) then
         @distance_to_archer = index
-        return false
+        return true
       end
     }
 
-    true
+    false
   end
 
   def in_danger?
@@ -162,11 +166,14 @@ class Player
 
     shoot.add_condition! ->{
       @warrior.look(@direction).each { |space|
-        return :success if space.to_s.match(/^Wi|^Th/)
-        return :success if space.to_s.match(/^Ar/) && 
-                           can_fight?(:archer) && 
-                           @distance_to_archer > @archer_melee_range
         return :failure if space.to_s.match(/^Ca|^Sl/)
+        return :success if space.to_s.match(/^Wi|^Th/)
+
+        near_archer?
+        if space.to_s.match(/^Ar/) && can_fight?(:archer) then
+          return :success if @distance_to_archer > @archer_melee_range
+          return :failure
+        end
       }
 
       :failure
