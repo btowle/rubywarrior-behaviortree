@@ -16,8 +16,11 @@ class Player
       :wizard => 0
     }
 
+    @enemies_behind = false
+
     @behavior = BehaviorTree::Priority.new
 
+    @behavior.add_child! look_behind_tree
     @behavior.add_child! rescue_tree
     @behavior.add_child! melee_tree
     @behavior.add_child! rest_tree
@@ -60,7 +63,21 @@ class Player
 
   def about_face!
     @warrior.pivot! @direction
-    @direction = :forward
+    @enemies_behind = false
+  end
+
+  def look_behind_tree
+    look_behind = BehaviorTree::Sequencer.new
+    look_behind.add_action! ->{
+      @warrior.look(opposite_direction).each{ |space|
+        @enemies_behind = true if space.enemy?
+        puts space.to_s if @enemies_behind
+      }
+
+      :failure
+    }
+
+    look_behind
   end
 
   def rescue_tree
@@ -168,6 +185,7 @@ class Player
     }
     change_direction.add_action! ->{
       @direction = opposite_direction
+      @enemies_behind = false
 
       :success
     }
@@ -216,7 +234,11 @@ class Player
     walk.add_child! retreat_tree
 
     walk.add_action! ->{
-      @warrior.walk! @direction
+      if @warrior.feel(@direction).stairs? && @enemies_behind then
+        about_face!
+      else
+        @warrior.walk! @direction
+      end
 
       :success
     }
