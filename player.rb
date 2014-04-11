@@ -20,6 +20,7 @@ class Player
 
     @behavior = BehaviorTree::Priority.new
 
+    @behavior.add_child! choose_target_tree
     @behavior.add_child! look_behind_tree
     @behavior.add_child! rescue_tree
     @behavior.add_child! melee_tree
@@ -39,7 +40,7 @@ class Player
   end
 
   def near_archer?
-    @warrior.look(@direction).each_with_index { |space,index|
+    @warrior.look(@direction).each_with_index { |space, index|
       if space.to_s.match(/Ar/) then
         @distance_to_archer = index
         return true
@@ -68,6 +69,30 @@ class Player
   def about_face!
     @warrior.pivot! @direction
     @enemies_behind = false
+  end
+
+  def choose_target_tree
+    choose_target = BehaviorTree::Sequencer.new
+    choose_target.add_action! ->{
+      ahead = @warrior.look(@direction)
+      behind = @warrior.look(opposite_direction)
+
+      closest_ahead = 100
+      closest_behind = 200
+      archer_ahead = false
+
+      (0..2).each do |i|
+        closest_behind = i if behind[i].to_s.match(/^[A-Z]/)
+        closest_ahead = i if ahead[i].to_s.match(/^[A-Z]/)
+        archer_ahead = true if ahead[i].to_s.match(/^Ar/)
+      end
+
+      @direction = opposite_direction if closest_behind < closest_ahead && !archer_ahead
+
+      :failure
+    }
+
+    choose_target
   end
 
   def look_behind_tree
