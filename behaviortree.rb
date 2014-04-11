@@ -12,7 +12,7 @@ module BehaviorTree
     def run
       return :error if @children.count <= 0
       @children[@last_run_child..-1].each_with_index do |child, index|
-        child_state = child.run()
+        child_state = child.run
         if child_state == :running then
           @last_run_child = index
           return :running
@@ -36,7 +36,7 @@ module BehaviorTree
     end
 
     def new_condition(test)
-      return BehaviorTree::Action.new(test)
+      return BehaviorTree::Condition.new(test)
     end
   end
 
