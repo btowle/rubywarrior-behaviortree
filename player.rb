@@ -71,7 +71,6 @@ class Player
     look_behind.add_action! ->{
       @warrior.look(opposite_direction).each{ |space|
         @enemies_behind = true if space.enemy?
-        puts space.to_s if @enemies_behind
       }
 
       :failure
@@ -141,6 +140,12 @@ class Player
     rest.add_condition! ->{
       return :success if safe?
 
+      :failure
+    }
+    rest.add_condition! ->{
+      @warrior.look(@direction).each { |space|
+        return :success unless space.to_s.match(/stairs|wall|nothing/)
+      }
       :failure
     }
     rest.add_action! ->{
