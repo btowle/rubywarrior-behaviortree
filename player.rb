@@ -9,14 +9,15 @@ class Player
     @distance_to_archer = 100
     @archer_melee_range = 1
 
-    @damage = {
+    @npcs = {
       :sludge => 6,
       :archer => 6,
       :thick_sludge => 0,
-      :wizard => 0
+      :wizard => 0,
+      :captive => 0
     }
 
-    @enemies_behind = false
+    @npcs_behind = false
 
     @behavior = BehaviorTree::Priority.new
 
@@ -35,13 +36,21 @@ class Player
     @last_health = warrior.health
   end
 
+  def get_unit_in(space)
+    space.to_s.downcase.gsub(/\s+/, "_").to_sym
+  end
+
+  def is_npc?(unit)
+    @npcs.keys.include? unit
+  end
+
   def safe?
     !near_archer?
   end
 
   def near_archer?
     @warrior.look(@direction).each_with_index { |space, index|
-      if space.to_s.match(/Ar/) then
+      if get_unit_in(space) == :archer then
         @distance_to_archer = index
         return true
       end
@@ -55,7 +64,7 @@ class Player
   end
 
   def healthy?
-    @warrior.health > @damage.values.max
+    @warrior.health > @npcs.values.max
   end
 
   def weak?
@@ -63,12 +72,16 @@ class Player
   end
 
   def can_fight?(enemy)
-    @warrior.health > @damage[enemy]
+    @warrior.health > @npcs[enemy]
+  end
+
+  def out_of_charge_range?
+    @distance_to_archer > @archer_melee_range
   end
 
   def about_face!
     @warrior.pivot! @direction
-    @enemies_behind = false
+    @npcs_behind = false
   end
 
   def choose_target_tree
@@ -82,9 +95,9 @@ class Player
       archer_ahead = false
 
       (0..2).each do |i|
-        closest_behind = i if behind[i].to_s.match(/^[A-Z]/)
-        closest_ahead = i if ahead[i].to_s.match(/^[A-Z]/)
-        archer_ahead = true if ahead[i].to_s.match(/^Ar/)
+        closest_behind = i if is_npc? get_unit_in(behind[i])
+        closest_ahead = i if is_npc? get_unit_in(ahead[i])
+        archer_ahead = true if get_unit_in(ahead[i]) == :archer
       end
 
       @direction = opposite_direction if closest_behind < closest_ahead && !archer_ahead
@@ -99,7 +112,7 @@ class Player
     look_behind = BehaviorTree::Sequencer.new
     look_behind.add_action! ->{
       @warrior.look(opposite_direction).each{ |space|
-        @enemies_behind = true if space.enemy?
+        @npcs_behind = true if space.enemy?
       }
 
       :failure
@@ -167,13 +180,8 @@ class Player
       :failure
     }
     rest.add_condition! ->{
-      return :success if safe?
-
-      :failure
-    }
-    rest.add_condition! ->{
       @warrior.look(@direction).each { |space|
-        return :success unless space.to_s.match(/stairs|wall|nothing/)
+        return :success if is_npc? get_unit_in(space)
       }
       :failure
     }
@@ -191,12 +199,12 @@ class Player
 
     shoot.add_condition! ->{
       @warrior.look(@direction).each { |space|
-        return :failure if space.to_s.match(/^Ca|^Sl/)
-        return :success if space.to_s.match(/^Wi|^Th/)
+        return :failure if [:captive, :sludge].include? get_unit_in(space)
+        return :success if [:wizard, :thick_sludge].include? get_unit_in(space)
 
         near_archer?
-        if space.to_s.match(/^Ar/) && can_fight?(:archer) then
-          return :success if @distance_to_archer > @archer_melee_range
+        if get_unit_in(space) == :archer && can_fight?(:archer) then
+          return :success if out_of_charge_range?
           return :failure
         end
       }
@@ -222,7 +230,7 @@ class Player
     }
     change_direction.add_action! ->{
       @direction = opposite_direction
-      @enemies_behind = false
+      @npcs_behind = false
 
       :success
     }
@@ -271,7 +279,7 @@ class Player
     walk.add_child! retreat_tree
 
     walk.add_action! ->{
-      if @warrior.feel(@direction).stairs? && @enemies_behind then
+      if @warrior.feel(@direction).stairs? && @npcs_behind then
         about_face!
       else
         @warrior.walk! @direction
