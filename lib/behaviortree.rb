@@ -22,22 +22,6 @@ module BehaviorTree
 
       @default_return_state
     end
-
-    def add_action!(action,condition=nil)
-      add_child! new_action(action, condition)
-    end
-
-    def add_condition!(test)
-      add_child! new_condition(test)
-    end
-
-    def new_action(action,condition=nil)
-      return BehaviorTree::Action.new(action,condition)
-    end
-
-    def new_condition(test)
-      return BehaviorTree::Condition.new(test)
-    end
   end
 
   class Priority
