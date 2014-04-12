@@ -61,7 +61,7 @@ module BeginnerBehavior
           }
           #don't finish if we haven't cleared level
           until_failure {
-            condition { player.at_stairs? }
+            condition { player.at? :stairs }
             condition { !player.cleared? }
             action { player.change_direction }
             action { player.advance! }

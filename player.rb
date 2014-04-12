@@ -70,17 +70,21 @@ class Player
     false
   end
 
-  def at_stairs?
+  def at?(feature)
     @warrior.look(@direction).each { |space|
-      return true if space.stairs?
+      return true if is_feature?(space, feature)
       break unless space.empty?
     }
 
     false
   end
 
-  def facing?(thing)
-    @warrior.feel(@direction).send(thing.to_s.concat("?").intern)
+  def facing?(feature)
+    is_feature? @warrior.feel(@direction), feature
+  end
+
+  def is_feature?(space, feature)
+    space.send(feature.to_s.concat("?").intern)
   end
 
   def cleared?
