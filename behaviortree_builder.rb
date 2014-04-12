@@ -30,13 +30,13 @@ module BehaviorTree
       @children.push child
     end
 
-    def until_first_success(&block)
+    def until_success(&block)
       node = BehaviorTree::Priority.new
       @root.add_child! node
       BehaviorTree.build(node,&block)
     end
 
-    def until_first_failure(&block)
+    def until_failure(&block)
       node = BehaviorTree::Sequencer.new
       @root.add_child! node
       BehaviorTree.build(node,&block)
