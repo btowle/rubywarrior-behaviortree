@@ -2,85 +2,87 @@ module BeginnerBehavior
   def get_behavior
     player = self
 
+    BehaviorTree.target = self
+
     BehaviorTree.build(:all) {
       #choose target
       any_or_fail {
         all_or_fail {
-          is { player.closest_target(:behind)[:distance] < player.closest_target(:ahead)[:distance] }
-          is { player.closest_target(:ahead)[:type] != :archer }
-          execute { player.set_target :behind }
-          execute { player.change_direction }
+          is { closest_target(:behind)[:distance] < closest_target(:ahead)[:distance] }
+          is { closest_target(:ahead)[:type] != :archer }
+          execute { set_target :behind }
+          execute { change_direction }
         }
-        execute { player.set_target :ahead }
+        execute { set_target :ahead }
       }
 
-      execute { player.look_behind }
+      execute { look_behind }
 
       any_or_fail {
         #rescue
         all_or_fail {
-          is { player.facing? :captive }
-          execute { player.save! }
+          is { facing? :captive }
+          execute { save! }
         }
 
         #melee
         all_or_fail {
-          is { player.facing? :enemy }
+          is { facing? :enemy }
           any_or_fail{
             all_or_fail {
-              is { player.facing_enemy? }
-              execute { player.combat! :melee }
+              is { facing_enemy? }
+              execute { combat! :melee }
             }
-            execute { player.about_face! }
+            execute { about_face! }
           }
         }
 
         #rest
         all_or_fail {
-          is { player.damaged? }
-          is { player.alone? }
-          execute { player.heal! }
+          is { damaged? }
+          is { alone? }
+          execute { heal! }
         }
 
         #shoot
         all_or_fail {
-          is { player.ranged_target? }
-          execute { player.combat! :ranged }
+          is { ranged_target? }
+          execute { combat! :ranged }
         }
 
         #movement
         any_or_fail {
           #change direction at walls
           all_or_fail {
-            is { player.at? :wall }
-            is { !player.at? :stairs }
-            execute { player.change_direction }
+            is { at? :wall }
+            is { !at? :stairs }
+            execute { change_direction }
             any_or_fail {
               all_or_fail {
-                is { player.ranged_target? }
-                execute { player.combat! :ranged }
+                is { ranged_target? }
+                execute { combat! :ranged }
               }
-              execute { player.advance! }
+              execute { advance! }
             }
           }
 
           #retreat if we need to
           all_or_fail {
-            is { player.in_danger? }
-            is { player.can_fight? }
-            is { player.facing? :wall }
-            execute { player.retreat! }
+            is { in_danger? }
+            is { can_fight? }
+            is { facing? :wall }
+            execute { retreat! }
           }
 
           #don't finish if we haven't cleared level
           all_or_fail {
-            is { player.at? :stairs }
-            is { !player.cleared? }
-            execute { player.change_direction }
-            execute { player.advance! }
+            is { at? :stairs }
+            is { !cleared? }
+            execute { change_direction }
+            execute { advance! }
           }
 
-          execute { player.advance! }
+          execute { advance! }
         }
       }
     }

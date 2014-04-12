@@ -1,6 +1,9 @@
 load(File.dirname(__FILE__)+"/behaviortree.rb")
 
 module BehaviorTree
+  def self.target=(value)
+    TreeBuilder.target = value
+  end
 
   def self.build(rootnode=nil,&block)
     tree = TreeBuilder.new(rootnode)
@@ -11,7 +14,13 @@ module BehaviorTree
   class TreeBuilder
     attr_reader :root, :children
 
+    def self.target=(value)
+      @@target = value
+    end
+
     def initialize(rootnode)
+      @target = @@target
+
       rootnode ||= :all
 
       case rootnode
@@ -58,6 +67,12 @@ module BehaviorTree
 
         :failure
       }))
+    end
+
+    def method_missing(m, *args, &block)
+      if @target
+        @target.send m ,*args ,&block
+      end
     end
   end
 end
