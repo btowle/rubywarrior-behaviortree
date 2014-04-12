@@ -1,5 +1,4 @@
 load(File.dirname(__FILE__)+"/behaviortree_builder.rb")
-load(File.dirname(__FILE__)+"/beginner_behavior.rb")
 
 class Player
   include BeginnerBehavior
