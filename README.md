@@ -10,8 +10,17 @@ My solutions for ruby warrior. Uses a behavior tree DSL to interact with the war
 
 Note: If your character is already in epic mode, you can skip steps 3-5 and watch the beginner_epic behavior
 
-##Known Issues
-When running the levels before epic mode, methods that make the warrior use abilities he doesn't know crashes.
+##Player > Warrior mapping
+
+Player Method | Required Warrior Methods
+--------------|-------------------------
+about_face!   | pivot!
+save!         | rescue!
+combat! :melee| attack!
+combat! :ranged| shoot!
+heal!         | rest!
+advance!      | walk!
+retreat!      | walk!
 
 ##More Info
 ###Behavior Trees
