@@ -139,32 +139,45 @@ class Player
   end
 
   def about_face!
-    @warrior.pivot! @direction
+    return unless warrior_do(:pivot!, @direction)
     @direction = :forward
   end
 
   def save!
-    @warrior.rescue! @direction
+    warrior_do :rescue!, @direction
   end
 
   def combat!(type)
     case type
     when :melee
-      @warrior.attack! @direction
+      warrior_do :attack!, @direction
     when :ranged
-      @warrior.shoot! @direction
+      warrior_do :shoot!, @direction
     end
   end
 
   def heal!
-    @warrior.rest!
+    warrior_do :rest!
   end
 
   def advance!
-    @warrior.walk! @direction
+    warrior_do :walk!, @direction
   end
 
   def retreat!
-    @warrior.walk! opposite_direction
+    warrior_do :walk!, opposite_direction
+  end
+
+  def warrior_do ability, *args
+    return unless warrior_can? ability
+    @warrior.send ability, *args
+  end
+
+  def warrior_can? ability
+    return true if @warrior.respond_to? ability
+
+    puts "**WARNING** #{caller_locations(2,1)[0].label} requires warrior.#{ability}"
+
+    false
   end
 end
