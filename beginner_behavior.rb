@@ -42,7 +42,8 @@ module BeginnerBehavior
         until_success {
           #change direction at walls
           until_failure {
-            condition { player.facing? :wall }
+            condition { player.at? :wall }
+            condition { !player.at? :stairs }
             action { player.change_direction }
             until_success {
               until_failure {
