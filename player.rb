@@ -40,7 +40,7 @@ class Player
     @target == :archer
   end
 
-  def weak?
+  def damaged?
     @warrior.health <= @npcs.values.max
   end
 
@@ -52,7 +52,7 @@ class Player
     @distance_to_target > @charge_range
   end
 
-  def ready_for_melee?
+  def facing_enemy?
     @direction == :forward
   end
 

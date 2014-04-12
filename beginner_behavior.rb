@@ -4,82 +4,83 @@ module BeginnerBehavior
 
     BehaviorTree.build {
       #choose target
-      until_success {
-        until_failure {
-          condition { player.closest_target(:behind)[:distance] < player.closest_target(:ahead)[:distance] }
-          condition { player.closest_target(:ahead)[:type] != :archer }
-          action { player.set_target :behind }
-          action { player.change_direction }
+      any_or_fail {
+        all_or_fail {
+          is { player.closest_target(:behind)[:distance] < player.closest_target(:ahead)[:distance] }
+          is { player.closest_target(:ahead)[:type] != :archer }
+          execute { player.set_target :behind }
+          execute { player.change_direction }
         }
-        action { player.set_target :ahead }
+        execute { player.set_target :ahead }
       }
 
-      action { player.look_behind }
+      execute { player.look_behind }
 
-      until_success {
+      any_or_fail {
         #rescue
-        until_failure {
-          condition { player.facing? :captive }
-          action { player.save! }
+        all_or_fail {
+          is { player.facing? :captive }
+          execute { player.save! }
         }
 
         #melee
-        until_failure {
-          condition { player.facing? :enemy }
-          until_success{
-            until_failure {
-              condition { player.ready_for_melee? }
-              action { player.combat! :melee }
+        all_or_fail {
+          is { player.facing? :enemy }
+          any_or_fail{
+            all_or_fail {
+              is { player.facing_enemy? }
+              execute { player.combat! :melee }
             }
-            action { player.about_face! }
+            execute { player.about_face! }
           }
         }
 
         #rest
-        until_failure {
-          condition { player.weak? }
-          condition { player.alone? }
-          action { player.heal! }
+        all_or_fail {
+          is { player.damaged? }
+          is { player.alone? }
+          execute { player.heal! }
         }
 
         #shoot
-        until_failure {
-          condition { player.ranged_target? }
-          action { player.combat! :ranged }
+        all_or_fail {
+          is { player.ranged_target? }
+          execute { player.combat! :ranged }
         }
 
-        #walk
-        until_success {
+        #movement
+        any_or_fail {
           #change direction at walls
-          until_failure {
-            condition { player.at? :wall }
-            condition { !player.at? :stairs }
-            action { player.change_direction }
-            until_success {
-              until_failure {
-                condition { player.ranged_target? }
-                action { player.combat! :ranged }
+          all_or_fail {
+            is { player.at? :wall }
+            is { !player.at? :stairs }
+            execute { player.change_direction }
+            any_or_fail {
+              all_or_fail {
+                is { player.ranged_target? }
+                execute { player.combat! :ranged }
               }
-              action { player.advance! }
+              execute { player.advance! }
             }
           }
+
           #retreat if we need to
-          until_failure {
-            condition { player.in_danger? }
-            condition { player.can_fight? }
-            condition { player.facing? :wall }
-            action { player.retreat! }
-          }
-          #don't finish if we haven't cleared level
-          until_failure {
-            condition { player.at? :stairs }
-            condition { !player.cleared? }
-            action { player.change_direction }
-            action { player.advance! }
+          all_or_fail {
+            is { player.in_danger? }
+            is { player.can_fight? }
+            is { player.facing? :wall }
+            execute { player.retreat! }
           }
 
-          #walk
-          action { player.advance! }
+          #don't finish if we haven't cleared level
+          all_or_fail {
+            is { player.at? :stairs }
+            is { !player.cleared? }
+            execute { player.change_direction }
+            execute { player.advance! }
+          }
+
+          execute { player.advance! }
         }
       }
     }

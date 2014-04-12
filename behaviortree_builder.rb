@@ -30,19 +30,19 @@ module BehaviorTree
       @children.push child
     end
 
-    def until_success(&block)
+    def any_or_fail(&block)
       node = BehaviorTree::Priority.new
       @root.add_child! node
       BehaviorTree.build(node,&block)
     end
 
-    def until_failure(&block)
+    def all_or_fail(&block)
       node = BehaviorTree::Sequencer.new
       @root.add_child! node
       BehaviorTree.build(node,&block)
     end
 
-    def action(&block)
+    def execute(&block)
       @root.add_child!(BehaviorTree::Action.new(->{
         yield
 
@@ -50,7 +50,7 @@ module BehaviorTree
       }))
     end
 
-    def condition(&block)
+    def is(&block)
       @root.add_child!(BehaviorTree::Condition.new(->{
         return :success if yield
 
