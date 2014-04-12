@@ -9,7 +9,7 @@ class Player
 
     @max_health = @last_health = 20
 
-    @distance_to_enemy = 100
+    @distance_to_target = 100
     @charge_range = 1
 
     @npcs = {
@@ -49,7 +49,7 @@ class Player
   end
 
   def out_of_charge_range?
-    @distance_to_enemy > @charge_range
+    @distance_to_target > @charge_range
   end
 
   def ready_for_melee?
@@ -91,29 +91,28 @@ class Player
     !@npcs_behind
   end
 
-  def choose_target
-    ahead = @warrior.look(@direction)
-    behind = @warrior.look(opposite_direction)
+  def closest_target(direction=:ahead)
+    view = @warrior.look(@direction)
+    view = @warrior.look(opposite_direction) if direction == :behind
 
-    closest_ahead = 100
-    closest_behind = 200
-    archer_ahead = false
+    target_distance = 100
+    target_type = nil
 
-    (0..2).each do |i|
-      closest_behind = i if is_npc?(unit_in(behind[i])) && i < closest_behind
-      closest_ahead = i if is_npc?(unit_in(ahead[i])) && i < closest_ahead
-      archer_ahead = true if unit_in(ahead[i]) == :archer
-    end
+    view.each_with_index { |space, index|
+      if is_npc?(unit_in(space)) && index < target_distance then
+        target_distance = index
+        target_type = unit_in(space)
+      end
+    }
 
-    if closest_behind < closest_ahead && !archer_ahead
-      @direction = opposite_direction
-      @npcs_behind = false
-      @target = unit_in behind[closest_behind]
-      @distance_to_enemy = closest_behind
-    else
-      @target = unit_in ahead[closest_ahead]
-      @distance_to_enemy = closest_ahead
-    end
+    return { :distance => target_distance, :type => target_type }
+  end
+
+  def set_target(direction)
+    target_info = closest_target(direction)
+
+    @target = target_info[:type]
+    @distance_to_target = target_info[:distance]
   end
 
   def look_behind

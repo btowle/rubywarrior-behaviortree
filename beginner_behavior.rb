@@ -3,7 +3,17 @@ module BeginnerBehavior
     player = self
 
     BehaviorTree.build {
-      action { player.choose_target }
+      #choose target
+      until_success {
+        until_failure {
+          condition { player.closest_target(:behind)[:distance] < player.closest_target(:ahead)[:distance] }
+          condition { player.closest_target(:ahead)[:type] != :archer }
+          action { player.set_target :behind }
+          action { player.change_direction }
+        }
+        action { player.set_target :ahead }
+      }
+
       action { player.look_behind }
 
       until_success {
