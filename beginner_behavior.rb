@@ -2,7 +2,7 @@ module BeginnerBehavior
   def get_behavior
     player = self
 
-    BehaviorTree.build {
+    BehaviorTree.build(:all) {
       #choose target
       any_or_fail {
         all_or_fail {

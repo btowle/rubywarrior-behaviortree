@@ -60,6 +60,15 @@ module BehaviorTree
     end
   end
 
+  class All
+    include Selector
+    def initialize
+      selector_init
+      @default_return_state = :success
+      @exit_states = []
+    end
+  end
+
   module Leaf
     def run
       return @test.() if @action.nil?

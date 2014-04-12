@@ -12,22 +12,18 @@ module BehaviorTree
     attr_reader :root, :children
 
     def initialize(rootnode)
-      @children = Array.new
-      if rootnode
-        @root = rootnode
+      rootnode ||= :all
+
+      case rootnode
+      when :all
+        @root = BehaviorTree::All.new
+      when :all_or_fail
+        @root = BehaviorTree::Sequencer.new
+      when :any_or_fail
+        @root = BehaviorTree::Priority.new
       else
-        @root = self
+        @root = rootnode
       end
-    end
-
-    def run
-      @children.each do |child|
-        child.run
-      end
-    end
-
-    def add_child!(child)
-      @children.push child
     end
 
     def any_or_fail(&block)
@@ -38,6 +34,12 @@ module BehaviorTree
 
     def all_or_fail(&block)
       node = BehaviorTree::Sequencer.new
+      @root.add_child! node
+      BehaviorTree.build(node,&block)
+    end
+
+    def all(&block)
+      node = BehaviorTree::All.new
       @root.add_child! node
       BehaviorTree.build(node,&block)
     end
