@@ -3,7 +3,6 @@ load(File.dirname(__FILE__)+"/beginner_behavior.rb")
 
 class Player
   include BeginnerBehavior
-  attr_reader :warrior, :direction, :npcs_behind
 
   def initialize
     @direction = :backward
@@ -31,19 +30,6 @@ class Player
     @warrior = warrior
     @behavior.run()
     @last_health = warrior.health
-  end
-
-  def unit_in(space)
-    space.to_s.downcase.gsub(/\s+/, "_").to_sym
-  end
-
-  def opposite_direction
-    case @direction
-    when :forward
-      return :backward
-    else
-      return :forward
-    end
   end
 
   def is_npc?(unit)
@@ -93,6 +79,14 @@ class Player
     false
   end
 
+  def facing?(thing)
+    @warrior.feel(@direction).send(thing.to_s.concat("?").intern)
+  end
+
+  def cleared?
+    !@npcs_behind
+  end
+
   def choose_target
     ahead = @warrior.look(@direction)
     behind = @warrior.look(opposite_direction)
@@ -129,8 +123,46 @@ class Player
     @npcs_behind = false
   end
 
+  def opposite_direction
+    case @direction
+    when :forward
+      return :backward
+    else
+      return :forward
+    end
+  end
+
+  def unit_in(space)
+    space.to_s.downcase.gsub(/\s+/, "_").to_sym
+  end
+
   def about_face!
     @warrior.pivot! @direction
     @direction = :forward
+  end
+
+  def save!
+    @warrior.rescue! @direction
+  end
+
+  def combat!(type)
+    case type
+    when :melee
+      @warrior.attack! @direction
+    when :ranged
+      @warrior.shoot! @direction
+    end
+  end
+
+  def heal!
+    @warrior.rest!
+  end
+
+  def advance!
+    @warrior.walk! @direction
+  end
+
+  def retreat!
+    @warrior.walk! opposite_direction
   end
 end

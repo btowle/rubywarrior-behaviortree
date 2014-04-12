@@ -9,17 +9,17 @@ module BeginnerBehavior
       until_success {
         #rescue
         until_failure {
-          condition { player.warrior.feel(player.direction).captive? }
-          action { player.warrior.rescue! player.direction }
+          condition { player.facing? :captive }
+          action { player.save! }
         }
 
         #melee
         until_failure {
-          condition { player.warrior.feel(player.direction).enemy? }
+          condition { player.facing? :enemy }
           until_success{
             until_failure {
               condition { player.ready_for_melee? }
-              action { player.warrior.attack!(player.direction) }
+              action { player.combat! :melee }
             }
             action { player.about_face! }
           }
@@ -29,46 +29,46 @@ module BeginnerBehavior
         until_failure {
           condition { player.weak? }
           condition { player.alone? }
-          action { player.warrior.rest! }
+          action { player.heal! }
         }
 
         #shoot
         until_failure {
           condition { player.ranged_target? }
-          action { player.warrior.shoot!(player.direction) }
+          action { player.combat! :ranged }
         }
 
         #walk
         until_success {
           #change direction at walls
           until_failure {
-            condition { player.warrior.feel(player.direction).wall? }
+            condition { player.facing? :wall }
             action { player.change_direction }
             until_success {
               until_failure {
                 condition { player.ranged_target? }
-                action { player.warrior.shoot!(player.direction) }
+                action { player.combat! :ranged }
               }
-              action { player.warrior.walk! player.direction }
+              action { player.advance! }
             }
           }
           #retreat if we need to
           until_failure {
             condition { player.in_danger? }
             condition { player.can_fight? }
-            condition { player.warrior.feel(player.opposite_direction).wall? }
-            action { player.warrior.walk! player.opposite_direction }
+            condition { player.facing? :wall }
+            action { player.retreat! }
           }
           #don't finish if we haven't cleared level
           until_failure {
             condition { player.at_stairs? }
-            condition { player.npcs_behind }
+            condition { !player.cleared? }
             action { player.change_direction }
-            action { player.warrior.walk! player.direction }
+            action { player.advance! }
           }
 
           #walk
-          action { player.warrior.walk! player.direction }
+          action { player.advance! }
         }
       }
     }
