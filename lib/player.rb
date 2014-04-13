@@ -2,6 +2,7 @@ load(File.dirname(__FILE__)+"/behaviortree_builder.rb")
 
 class Player
   include Behavior
+  attr_reader :adjacent_units
 
   def initialize
     @direction = :backward
@@ -18,8 +19,11 @@ class Player
       :captive => 0
     }
 
+    @directions = [ :forward, :backward, :right, :left ]
+
     @npcs_behind = false
     @target = :nothing
+    @adjacent_units = {}
 
     @behavior = get_behavior()
   end
@@ -53,6 +57,49 @@ class Player
     @direction == :forward
   end
 
+  def feel_adjacent_enemies
+    adjacent_enemies = []
+    @directions.each { |d|
+      adjacent_enemies.push({ :direction => d, :type => unit_in(warrior_do(:feel,d))}) if warrior_do(:feel, d).enemy?
+    }
+
+    adjacent_enemies
+  end
+
+  def feel_adjacent_units
+    @adjacent_units = { :enemy => {
+                          :number => 0,
+                          :list => {
+                            :forward => nil,
+                            :backward => nil,
+                            :left => nil,
+                            :right => nil
+                          }
+                        }
+                      }
+    feel_adjacent_enemies.each { |enemy|
+      @adjacent_units[:enemy][:number] += 1
+      @adjacent_units[:enemy][:list][enemy[:direction]] = enemy[:type]
+    }
+
+    @adjacent_units
+  end
+
+  def act_on_adjacent(type=:enemy,&block)
+    @adjacent_units[type][:list].each_pair { |direction, type|
+      if type then
+        yield direction, type
+        break
+      end
+    }
+  end
+
+  def face_adjacent(type=:enemy)
+    act_on_adjacent(:enemy) do |direction, type|
+      change_direction direction
+    end
+  end
+
   def alone?
     (closest_target(:ahead)[:distance] > @look_range && closest_target(:behind)[:distance] > @look_range)
   end
@@ -82,6 +129,10 @@ class Player
 
   def cleared?
     !@npcs_behind
+  end
+
+  def way_blocked?(direction=@direction)
+    !warrior_do(:feel, direction).empty?
   end
 
   def get_view direction
@@ -143,6 +194,10 @@ class Player
     space.to_s.downcase.gsub(/\s+/, "_").to_sym
   end
 
+  def unit_in_direction(direction=@direction)
+    unit_in(warrior_do(:feel, direction))
+  end
+
   def about_face!
     return unless warrior_do(:pivot!, @direction)
     @direction = :forward
@@ -184,5 +239,11 @@ class Player
     puts "**WARNING** #{caller_locations(2,1)[0].label} requires warrior.#{ability}"
 
     false
+  end
+
+  def bind_adjacent!
+    act_on_adjacent(:enemy) do |direction, type|
+      warrior_do(:bind!, direction)
+    end
   end
 end

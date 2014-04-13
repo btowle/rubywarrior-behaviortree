@@ -30,7 +30,10 @@ at?               | look                      | 8               | 8
 look_behind       | look                      | 8               | 8
 alone?            | look                      | 8               | 8
 toward_stairs     | direction_of_stairs       | -               | 1
-                  | bind!                     | -               | 3
+*adjacent*        | feel?                     | 2               | 1
+way_blocked?      | feel?                     | 2               | 1
+unit_in_direction | feel?                     | 2               | 1
+bind_adjacent     | bind!                     | -               | 3
                   | listen                    | -               | 4
                   | direction_of              | -               | 4
                   | detonate!                 | _               | 8
