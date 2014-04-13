@@ -12,14 +12,14 @@ class Player
     @charge_range = 1
 
     @npcs = {
-      :sludge => 6,
-      :archer => 6,
-      :thick_sludge => 0,
-      :wizard => 0,
-      :captive => 0
+      :sludge => { :melee => 6, :ranged => 0 },
+      :archer => { :melee => 6, :ranged => 6 },
+      :thick_sludge => { :melee => 15, :ranged => 0 },
+      :wizard => { :melee => 20, :ranged => 0 },
+      :captive => { :melee => 0, :ranged => 0 }
     }
 
-    @directions = [ :forward, :backward, :right, :left ]
+    @directions = [ :forward, :right, :backward, :left ]
 
     @npcs_behind = false
     @target = :nothing
@@ -45,8 +45,8 @@ class Player
     warrior_do(:health) <= @npcs.values.max if warrior_do(:health)
   end
 
-  def can_fight?(enemy=@target)
-    is_npc?(enemy) && warrior_do(:health) > @npcs[enemy]
+  def can_fight?(enemy=@target, combat_type=:melee)
+    return is_npc?(enemy) && warrior_do(:health) > @npcs[enemy][combat_type]
   end
 
   def out_of_charge_range?
@@ -61,7 +61,8 @@ class Player
     @remaining_units = {
                         :number => 0,
                         :enemy => [],
-                        :captive => []
+                        :captive => [],
+                        :strongest_foe => :nothing
                        }
     warrior_do(:listen).each { |space|
       @remaining_units[:number] += 1
@@ -70,6 +71,10 @@ class Player
         @remaining_units[:captive].push info
       else
         @remaining_units[:enemy].push info
+        if @remaining_units[:strongest_foe] != :nothing &&
+           @npcs[info[:type]].values.max > @remaining_units[:strongest_foe] then
+          @remaining_units[:strongest_foe] = info[:type]
+        end
       end
     }
   end
@@ -144,11 +149,15 @@ class Player
   end
 
   def facing?(feature)
-    is_feature? warrior_do(:feel, @direction), feature
+    can_feel?(feature)
   end
 
   def is_feature?(space, feature)
     space.send(feature.to_s.concat("?").intern)
+  end
+
+  def can_feel?(feature, direction=@direction)
+    is_feature? warrior_do(:feel, direction), feature
   end
 
   def cleared?
@@ -194,6 +203,12 @@ class Player
     get_view(opposite_direction).each { |space|
       @npcs_behind = true if space.enemy?
     }
+  end
+
+  def rotate(turn_direction=:right)
+    dir = 1
+    dir = -1 if turn_direction == :left
+    @direction = @directions[(@directions.find_index(@direction)+dir)%4]
   end
 
   def change_direction(new_direction=opposite_direction)

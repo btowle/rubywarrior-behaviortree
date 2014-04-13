@@ -33,6 +33,7 @@ toward_stairs     | direction_of_stairs       | -               | 1
 *adjacent*        | feel?                     | 2               | 1
 way_blocked?      | feel?                     | 2               | 1
 unit_in_direction | feel?                     | 2               | 1
+can_feel?         | feel?                     | 2               | 1
 bind_adjacent     | bind!                     | -               | 3
 listen_for_units  | listen/direction_of       | -               | 4
                   | direction_of              | -               | 4

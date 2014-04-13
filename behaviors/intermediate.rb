@@ -14,6 +14,11 @@ module Behavior
           is { remaining_units[:captive].count > 0 }
           execute { change_direction remaining_units[:captive][0][:direction] }
         end
+        all_or_fail do
+          is { remaining_units[:enemy].count > 0 }
+          execute { change_direction remaining_units[:enemy][0][:direction] }
+        end
+
         execute { change_direction(toward_stairs) }
       end
 
@@ -34,8 +39,8 @@ module Behavior
 
         #rest
         all_or_fail do
-          is { damaged? }
-          is { adjacent_units[:enemy].count == 1 }
+          is { !can_fight?(:thick_sludge) }
+          is { adjacent_units[:enemy][:number] == 0 }
           execute { heal! }
         end
 
@@ -55,8 +60,24 @@ module Behavior
 
         end
 
-        #move toward stairs
-        execute { advance! }
+        #move
+        any_or_fail do
+          #avoid early exit
+          all_or_fail do
+            is { can_feel? :stairs }
+            is { remaining_units[:captive].count > 0 || remaining_units[:enemy].count > 0 }
+            any_or_fail do
+              all_or_fail do
+                is { can_feel? :wall, :right }
+                execute { rotate :left }
+              end
+              execute { rotate :right }
+            end
+            execute { advance! }
+          end
+          execute { advance! }
+        end
+
       end
     end
   end
