@@ -58,13 +58,18 @@ class Player
                         :number => 0,
                         :enemy => [],
                         :captive => [],
+                        :bomb_captive => [],
                         :strongest_foe => :nothing
                        }
     warrior_do(:listen).each { |space|
       @remaining_units[:number] += 1
       info = space_info(space)
       if info[:type] == :captive then
-        @remaining_units[:captive].push info
+        if info[:bomb] then
+          @remaining_units[:bomb_captive].push info
+        else
+          @remaining_units[:captive].push info
+        end
       else
         @remaining_units[:enemy].push info
         if @remaining_units[:strongest_foe] != :nothing &&
@@ -78,7 +83,8 @@ class Player
   def space_info(space)
     return {
             :direction => warrior_do(:direction_of,space),
-            :type => unit_in(space)
+            :type => unit_in(space),
+            :bomb => space.ticking?
            }
   end
 

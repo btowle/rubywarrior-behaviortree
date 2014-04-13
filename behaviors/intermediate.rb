@@ -11,6 +11,10 @@ module Behavior
       #choose direction
       any_or_fail do
         all_or_fail do
+          is { remaining_units[:bomb_captive].count > 0 }
+          execute { change_direction remaining_units[:bomb_captive][0][:direction] }
+        end
+        all_or_fail do
           is { remaining_units[:captive].count > 0 }
           execute { change_direction remaining_units[:captive][0][:direction] }
         end
@@ -32,6 +36,7 @@ module Behavior
 
         #fight
         all_or_fail do
+          is { remaining_units[:bomb_captive].count == 0 }
           is { adjacent_units[:enemy][:number] == 1 }
           execute { face_adjacent :enemy }
           execute { combat! :melee }
@@ -39,7 +44,7 @@ module Behavior
 
         #rest
         all_or_fail do
-          is { !can_fight?(:thick_sludge) }
+          is { !can_fight? :thick_sludge }
           is { adjacent_units[:enemy][:number] == 0 }
           execute { heal! }
         end
@@ -53,22 +58,34 @@ module Behavior
               execute { save! }
             end
             all_or_fail do
+              is { remaining_units[:bomb_captive].count == 0 }
               execute { combat! :melee }
             end
           end
-
-
         end
 
         #move
         any_or_fail do
+          #rush to bombs
+          all_or_fail do
+            #is { remaining_units[:bomb_captive].count > 0 }
+            is { way_blocked? }
+            any_or_fail do
+              all_or_fail do
+                is { way_blocked? :right }
+                execute { rotate :left }
+              end
+              execute { rotate :right }
+            end
+            execute { advance! }
+          end
           #avoid early exit
           all_or_fail do
             is { can_feel? :stairs }
             is { remaining_units[:captive].count > 0 || remaining_units[:enemy].count > 0 }
             any_or_fail do
               all_or_fail do
-                is { can_feel? :wall, :right }
+                is { way_blocked? :right }
                 execute { rotate :left }
               end
               execute { rotate :right }
