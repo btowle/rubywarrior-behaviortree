@@ -59,7 +59,7 @@ class Player
                         :enemy => [],
                         :captive => [],
                         :bomb_captive => [],
-                        :strongest_foe => :nothing
+                        :strongest_foe => :captive
                        }
     warrior_do(:listen).each { |space|
       @remaining_units[:number] += 1
@@ -73,7 +73,7 @@ class Player
       else
         @remaining_units[:enemy].push info
         if @remaining_units[:strongest_foe] != :nothing &&
-           @npcs[info[:type]].values.max > @remaining_units[:strongest_foe] then
+           @npcs[info[:type]].values.max > @npcs[@remaining_units[:strongest_foe]].values.max then
           @remaining_units[:strongest_foe] = info[:type]
         end
       end
