@@ -4,8 +4,15 @@ module Behavior
 
     BehaviorTree.build(:all) do
       execute { change_direction(toward_stairs) }
-      execute { advance! }
 
+      any_or_fail do
+        all_or_fail do
+          is { facing?(:enemy) }
+          execute { combat! :melee }
+        end
+
+        execute { advance! }
+      end
     end
   end
 end
