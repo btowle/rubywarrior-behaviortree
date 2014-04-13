@@ -24,6 +24,7 @@ can_fight?        | health                    | 3               | 2
 save!             | rescue!                   | 5               | 3
 about_face!       | pivot!                    | 7               | -
 combat! :ranged   | shoot!                    | 8               | -
+get_view          | look                      | 8               | 8
 closest_target    | look                      | 8               | 8
 at?               | look                      | 8               | 8
 look_behind       | look                      | 8               | 8

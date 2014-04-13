@@ -38,11 +38,11 @@ class Player
   end
 
   def damaged?
-    @warrior.health <= @npcs.values.max
+    warrior_do(:health) <= @npcs.values.max if warrior_do(:health)
   end
 
   def can_fight?(enemy=@target)
-    is_npc?(enemy) && @warrior.health > @npcs[enemy]
+    is_npc?(enemy) && warrior_do(:health) > @npcs[enemy]
   end
 
   def out_of_charge_range?
@@ -64,7 +64,7 @@ class Player
   end
 
   def at?(feature)
-    @warrior.look(@direction).each { |space|
+    get_view(@direction).each { |space|
       return true if is_feature?(space, feature)
       break unless space.empty?
     }
@@ -73,7 +73,7 @@ class Player
   end
 
   def facing?(feature)
-    is_feature? @warrior.feel(@direction), feature
+    is_feature? warrior_do(:feel, @direction), feature
   end
 
   def is_feature?(space, feature)
@@ -84,9 +84,16 @@ class Player
     !@npcs_behind
   end
 
+  def get_view direction
+    view = warrior_do(:look, direction)
+    return view if view
+
+    []
+  end
+
   def closest_target(direction=:ahead)
-    view = @warrior.look(@direction)
-    view = @warrior.look(opposite_direction) if direction == :behind
+    view = get_view(@direction)
+    view = get_view(opposite_direction) if direction == :behind
 
     target_distance = 100
     target_type = nil
@@ -109,7 +116,7 @@ class Player
   end
 
   def look_behind
-    @warrior.look(opposite_direction).each{ |space|
+    get_view(opposite_direction).each { |space|
       @npcs_behind = true if space.enemy?
     }
   end
