@@ -2,7 +2,7 @@ load(File.dirname(__FILE__)+"/behaviortree_builder.rb")
 
 class Player
   include Behavior
-  attr_reader :adjacent_units
+  attr_reader :adjacent_units, :remaining_units
 
   def initialize
     @direction = :backward
@@ -55,6 +55,30 @@ class Player
 
   def facing_enemy?
     @direction == :forward
+  end
+
+  def listen_for_units
+    @remaining_units = {
+                        :number => 0,
+                        :enemy => [],
+                        :captive => []
+                       }
+    warrior_do(:listen).each { |space|
+      @remaining_units[:number] += 1
+      info = space_info(space)
+      if info[:type] == :captive then
+        @remaining_units[:captive].push info
+      else
+        @remaining_units[:enemy].push info
+      end
+    }
+  end
+
+  def space_info(space)
+    return {
+            :direction => warrior_do(:direction_of,space),
+            :type => unit_in(space)
+           }
   end
 
   def feel_adjacent_enemies

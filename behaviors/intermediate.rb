@@ -4,9 +4,18 @@ module Behavior
 
     BehaviorTree.build(:all) do
       #always face stairs
-      execute { change_direction(toward_stairs) }
-      #always feel around
+      #sense enemies
       execute { feel_adjacent_units }
+      execute { listen_for_units }
+
+      #choose direction
+      any_or_fail do
+        all_or_fail do
+          is { remaining_units[:captive].count > 0 }
+          execute { change_direction remaining_units[:captive][0][:direction] }
+        end
+        execute { change_direction(toward_stairs) }
+      end
 
       #pick action
       any_or_fail do
