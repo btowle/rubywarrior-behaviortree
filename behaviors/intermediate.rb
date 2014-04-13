@@ -1,6 +1,7 @@
 module Behavior
   def get_behavior
     BehaviorTree.target = self
+    @npcs[:sludge][:melee] = 9
 
     BehaviorTree.build(:all) do
       #always face stairs
@@ -28,6 +29,40 @@ module Behavior
 
       #pick action
       any_or_fail do
+        #rush to bombs
+        all_or_fail do
+          is { remaining_units[:bomb_captive].count > 0 }
+          is { !facing? :ticking }
+          any_or_fail do
+            all_or_fail do
+              is { way_blocked? }
+              any_or_fail do
+                all_or_fail do
+                  is { !way_blocked? :left }
+                  execute { rotate :left }
+                  execute { advance! }
+                end
+                all_or_fail do
+                  is { !way_blocked? :right }
+                  execute { rotate :right }
+                  execute { advance! }
+                end
+                any_or_fail do
+                  #bind enemies
+                  all_or_fail do
+                    is { adjacent_units[:enemy][:number] > 1 }
+                    execute { bind_adjacent! }
+                  end
+
+                  #fight
+                  execute { combat! :melee }
+                end
+              end
+            end
+            execute { advance! }
+          end
+        end
+
         #bind enemies
         all_or_fail do
           is { adjacent_units[:enemy][:number] > 1 }
@@ -36,17 +71,11 @@ module Behavior
 
         #fight
         all_or_fail do
-          is { remaining_units[:bomb_captive].count == 0 }
           is { adjacent_units[:enemy][:number] == 1 }
-          execute { face_adjacent :enemy }
-          execute { combat! :melee }
-        end
 
-        #rest
-        all_or_fail do
-          is { !can_fight? remaining_units[:strongest_foe] }
-          is { adjacent_units[:enemy][:number] == 0 }
-          execute { heal! }
+          execute { face_adjacent :enemy }
+
+          execute { combat! :melee }
         end
 
         #handle bound units
@@ -58,27 +87,20 @@ module Behavior
               execute { save! }
             end
             all_or_fail do
-              is { remaining_units[:bomb_captive].count == 0 }
               execute { combat! :melee }
             end
           end
         end
 
+        #rest
+        all_or_fail do
+          is { !can_fight? remaining_units[:strongest_foe] }
+          is { adjacent_units[:enemy][:number] == 0 }
+          execute { heal! }
+        end
+
         #move
         any_or_fail do
-          #rush to bombs
-          all_or_fail do
-            #is { remaining_units[:bomb_captive].count > 0 }
-            is { way_blocked? }
-            any_or_fail do
-              all_or_fail do
-                is { way_blocked? :right }
-                execute { rotate :left }
-              end
-              execute { rotate :right }
-            end
-            execute { advance! }
-          end
           #avoid early exit
           all_or_fail do
             is { can_feel? :stairs }
@@ -92,6 +114,7 @@ module Behavior
             end
             execute { advance! }
           end
+
           execute { advance! }
         end
 
