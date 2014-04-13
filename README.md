@@ -36,8 +36,9 @@ unit_in_direction | feel?                     | 2               | 1
 can_feel?         | feel?                     | 2               | 1
 bind_adjacent     | bind!                     | -               | 3
 listen_for_units  | listen/direction_of       | -               | 4
-                  | direction_of              | -               | 4
-                  | detonate!                 | _               | 8
+space_info        | direction_of              | -               | 4
+good_bomb_target? | look                      |                 | 8
+throw_bomb!       | detonate!                 | _               | 8
                   | distance_of               | _               | 9
 ##More Info
 ###Behavior Trees

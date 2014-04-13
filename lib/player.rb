@@ -53,6 +53,12 @@ class Player
     @direction == :forward
   end
 
+  def good_bomb_target?
+    puts get_view[0]
+    puts get_view[1]
+    get_view[0].enemy? && get_view[1].enemy?
+  end
+
   def listen_for_units
     @remaining_units = {
                         :number => 0,
@@ -170,7 +176,7 @@ class Player
     !warrior_do(:feel, direction).empty?
   end
 
-  def get_view direction
+  def get_view direction=@direction
     view = warrior_do(:look, direction)
     return view if view
 
@@ -267,6 +273,10 @@ class Player
 
   def retreat!
     warrior_do :walk!, opposite_direction
+  end
+
+  def throw_bomb! direction=@direction
+    warrior_do :detonate!, direction
   end
 
   def warrior_do ability, *args

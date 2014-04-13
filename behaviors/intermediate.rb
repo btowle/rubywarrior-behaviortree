@@ -55,7 +55,13 @@ module Behavior
                   end
 
                   #fight
-                  execute { combat! :melee }
+                  any_or_fail do
+                    all_or_fail do
+                      is { good_bomb_target? }
+                      execute { throw_bomb! }
+                    end
+                    execute { combat! :melee }
+                  end
                 end
               end
             end
@@ -67,6 +73,12 @@ module Behavior
         all_or_fail do
           is { adjacent_units[:enemy][:number] > 1 }
           execute { bind_adjacent! }
+        end
+
+        #throw bombs
+        all_or_fail do
+          is { good_bomb_target? }
+          execute { throw_bomb! }
         end
 
         #fight
