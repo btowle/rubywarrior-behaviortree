@@ -12,16 +12,28 @@ Note: If your character is already in epic mode, you can skip steps 3-5 and watc
 
 ##Player > Warrior mapping
 
-Player Method | Required Warrior Methods
---------------|-------------------------
-about_face!   | pivot!
-save!         | rescue!
-combat! :melee| attack!
-combat! :ranged| shoot!
-heal!         | rest!
-advance!      | walk!
-retreat!      | walk!
-
+Player Method     | Required Warrior Methods  | Beginner Level  | Intermediate Level
+-------------     | ------------------------  | --------------  | ------------------
+advance!          | walk!                     | 1               | 1
+retreat!          | walk!                     | 1               | 1
+facing?           | feel?                     | 2               | 1
+combat! :melee    | attack!                   | 2               | 2
+heal!             | rest!                     | 3               | 2
+damaged?          | health                    | 3               | 2
+can_fight?        | health                    | 3               | 2
+save!             | rescue!                   | 5               | 3
+about_face!       | pivot!                    | 7               | -
+combat! :ranged   | shoot!                    | 8               | -
+closest_target    | look                      | 8               | 8
+at?               | look                      | 8               | 8
+look_behind       | look                      | 8               | 8
+alone?            | look                      | 8               | 8
+                  | direction_of_stairs       | -               | 1
+                  | bind!                     | -               | 3
+                  | listen                    | -               | 4
+                  | direction_of              | -               | 4
+                  | detonate!                 | _               | 8
+                  | distance_of               | _               | 9
 ##More Info
 ###Behavior Trees
 - http://www.moddb.com/groups/indievault/tutorials/game-ai-behavior-tree
