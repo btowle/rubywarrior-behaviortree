@@ -1,7 +1,7 @@
 load(File.dirname(__FILE__)+"/behaviortree_builder.rb")
 
 class Player
-  include BeginnerBehavior
+  include Behavior
 
   def initialize
     @direction = :backward

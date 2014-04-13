@@ -1,7 +1,5 @@
-module BeginnerBehavior
+module Behavior
   def get_behavior
-    player = self
-
     BehaviorTree.target = self
 
     BehaviorTree.build(:all) do
