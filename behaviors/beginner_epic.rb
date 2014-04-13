@@ -40,7 +40,7 @@ module BeginnerBehavior
         #rest
         all_or_fail do
           is { damaged? }
-          is { alone? }
+          is { !alone? }
           execute { heal! }
         end
 

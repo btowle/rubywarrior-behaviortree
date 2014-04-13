@@ -6,9 +6,8 @@ class Player
   def initialize
     @direction = :backward
 
-    @max_health = @last_health = 20
-
     @distance_to_target = 100
+    @look_range = 3
     @charge_range = 1
 
     @npcs = {
@@ -28,7 +27,6 @@ class Player
   def play_turn(warrior)
     @warrior = warrior
     @behavior.run()
-    @last_health = warrior.health
   end
 
   def is_npc?(unit)
@@ -56,11 +54,7 @@ class Player
   end
 
   def alone?
-    @warrior.look(@direction).each { |space|
-      return true if is_npc? unit_in(space)
-    }
-
-    false
+    (closest_target(:ahead)[:distance] > @look_range && closest_target(:behind)[:distance] > @look_range)
   end
 
   def ranged_target?
