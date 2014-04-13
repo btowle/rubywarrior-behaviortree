@@ -121,8 +121,8 @@ class Player
     }
   end
 
-  def change_direction
-    @direction = opposite_direction
+  def change_direction(new_direction=opposite_direction)
+    @direction = new_direction
     @npcs_behind = false
   end
 
@@ -133,6 +133,10 @@ class Player
     else
       return :forward
     end
+  end
+
+  def toward_stairs
+    warrior_do(:direction_of_stairs)
   end
 
   def unit_in(space)

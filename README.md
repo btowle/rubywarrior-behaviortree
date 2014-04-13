@@ -29,7 +29,7 @@ closest_target    | look                      | 8               | 8
 at?               | look                      | 8               | 8
 look_behind       | look                      | 8               | 8
 alone?            | look                      | 8               | 8
-                  | direction_of_stairs       | -               | 1
+toward_stairs     | direction_of_stairs       | -               | 1
                   | bind!                     | -               | 3
                   | listen                    | -               | 4
                   | direction_of              | -               | 4
