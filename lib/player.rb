@@ -41,10 +41,6 @@ class Player
     @target == :archer
   end
 
-  def damaged?
-    warrior_do(:health) <= @npcs.values.max if warrior_do(:health)
-  end
-
   def can_fight?(enemy=@target, combat_type=:melee)
     return is_npc?(enemy) && warrior_do(:health) > @npcs[enemy][combat_type]
   end

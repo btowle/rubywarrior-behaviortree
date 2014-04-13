@@ -37,7 +37,7 @@ module Behavior
 
         #rest
         all_or_fail do
-          is { damaged? }
+          is { !can_fight? :sludge }
           is { !alone? }
           execute { heal! }
         end
