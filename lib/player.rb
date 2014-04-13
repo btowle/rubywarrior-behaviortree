@@ -72,7 +72,7 @@ class Player
         end
       else
         @remaining_units[:enemy].push info
-        if @remaining_units[:strongest_foe] != :nothing &&
+        if @remaining_units[:strongest_foe] == :captive ||
            @npcs[info[:type]].values.max > @npcs[@remaining_units[:strongest_foe]].values.max then
           @remaining_units[:strongest_foe] = info[:type]
         end
@@ -101,10 +101,10 @@ class Player
     @adjacent_units = { :enemy => {
                           :number => 0,
                           :list => {
-                            :forward => nil,
+                            :right => nil,
                             :backward => nil,
                             :left => nil,
-                            :right => nil
+                            :forward => nil
                           }
                         }
                       }
