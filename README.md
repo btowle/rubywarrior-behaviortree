@@ -37,8 +37,9 @@ can_feel?         | feel?                     | 2               | 1
 bind_adjacent     | bind!                     | -               | 3
 listen_for_units  | listen/direction_of       | -               | 4
 space_info        | direction_of              | -               | 4
-good_bomb_target? | look                      |                 | 8
+good_bomb_target? | look                      | 8               | 8
 throw_bomb!       | detonate!                 | _               | 8
+can_survive_bomb? | health                    | 3               | 2
                   | distance_of               | _               | 9
 ##More Info
 ###Behavior Trees

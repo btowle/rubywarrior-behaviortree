@@ -10,6 +10,7 @@ class Player
     @distance_to_target = 100
     @look_range = 3
     @charge_range = 1
+    @bomb_damage = 4
 
     @npcs = {
       :sludge => { :melee => 6, :ranged => 0 },
@@ -54,9 +55,11 @@ class Player
   end
 
   def good_bomb_target?
-    puts get_view[0]
-    puts get_view[1]
     get_view[0].enemy? && get_view[1].enemy?
+  end
+
+  def can_survive_bomb?
+    warrior_do(:health) > (@bomb_damage + 8)
   end
 
   def listen_for_units

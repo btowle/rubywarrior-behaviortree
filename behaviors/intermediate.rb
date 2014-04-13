@@ -34,6 +34,15 @@ module Behavior
           is { remaining_units[:bomb_captive].count > 0 }
           is { !facing? :ticking }
           any_or_fail do
+
+            #rest if can't bomb
+            all_or_fail do
+              is { !can_survive_bomb? }
+              is { adjacent_units[:enemy][:number] == 0 }
+              execute { heal! }
+            end
+
+            #handle blocked path
             all_or_fail do
               is { way_blocked? }
               any_or_fail do
