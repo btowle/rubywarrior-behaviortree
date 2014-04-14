@@ -23,7 +23,6 @@ module Behavior
           is { remaining_units[:enemy].count > 0 }
           execute { change_direction remaining_units[:enemy][0][:direction] }
         end
-
         execute { change_direction(toward_stairs) }
       end
 
@@ -34,11 +33,12 @@ module Behavior
           is { remaining_units[:bomb_captive].count > 0 }
           is { !facing? :ticking }
           any_or_fail do
-
             #rest if can't bomb
             all_or_fail do
               is { !can_survive_bomb? }
               is { adjacent_units[:enemy][:number] == 0 }
+              is { !alone? }
+              is { !at? :captive }
               execute { heal! }
             end
 
@@ -46,30 +46,35 @@ module Behavior
             all_or_fail do
               is { way_blocked? }
               any_or_fail do
+                #fight through
                 all_or_fail do
-                  is { !way_blocked? :left }
-                  execute { rotate :left }
-                  execute { advance! }
-                end
-                all_or_fail do
-                  is { !way_blocked? :right }
-                  execute { rotate :right }
-                  execute { advance! }
-                end
-                any_or_fail do
-                  #bind enemies
-                  all_or_fail do
-                    is { adjacent_units[:enemy][:number] > 1 }
-                    execute { bind_adjacent! }
-                  end
-
-                  #fight
+                  is { adjacent_units[:total] }
                   any_or_fail do
+                    #bind enemies
                     all_or_fail do
-                      is { good_bomb_target? }
-                      execute { throw_bomb! }
+                      is { adjacent_units[:enemy][:number] > 1 }
+                      execute { bind_adjacent! }
                     end
-                    execute { combat! :melee }
+
+                    #fight
+                    any_or_fail do
+                      all_or_fail do
+                        is { good_bomb_target? }
+                        execute { throw_bomb! }
+                      end
+                      execute { combat! :melee }
+                    end
+                  end
+                end
+                #walk around
+                all_or_fail do
+                  execute { rotate :left }
+                  all_or_fail do
+                    is { way_blocked? }
+                    execute { rotate :right }
+                    execute { rotate :right }
+                    is { way_blocked? }
+                    execute { rotate :left }
                   end
                 end
               end
@@ -93,9 +98,7 @@ module Behavior
         #fight
         all_or_fail do
           is { adjacent_units[:enemy][:number] == 1 }
-
           execute { face_adjacent :enemy }
-
           execute { combat! :melee }
         end
 
@@ -108,6 +111,7 @@ module Behavior
               execute { save! }
             end
             all_or_fail do
+              is { can_fight? unit_in_direction }
               execute { combat! :melee }
             end
           end
@@ -135,10 +139,8 @@ module Behavior
             end
             execute { advance! }
           end
-
           execute { advance! }
         end
-
       end
     end
   end
