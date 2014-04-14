@@ -1,4 +1,4 @@
-load(File.dirname(__FILE__)+"/behaviortree_builder.rb")
+load(File.dirname(__FILE__)+"/../behaviortree/builder.rb")
 
 class Player
   include Behavior
@@ -172,16 +172,12 @@ class Player
     false
   end
 
-  def facing?(feature)
-    can_feel?(feature)
+  def facing?(feature, direction=@direction)
+    is_feature? warrior_do(:feel, direction), feature
   end
 
   def is_feature?(space, feature)
     space.send(feature.to_s.concat("?").intern)
-  end
-
-  def can_feel?(feature, direction=@direction)
-    is_feature? warrior_do(:feel, direction), feature
   end
 
   def cleared?

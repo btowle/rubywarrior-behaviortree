@@ -128,7 +128,7 @@ module Behavior
         any_or_fail do
           #avoid early exit
           all_or_fail do
-            is { can_feel? :stairs }
+            is { facing? :stairs }
             is { remaining_units[:captive].count > 0 || remaining_units[:enemy].count > 0 }
             any_or_fail do
               all_or_fail do
