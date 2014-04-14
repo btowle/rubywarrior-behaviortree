@@ -15,7 +15,7 @@ class Player
     @npcs = {
       :sludge => { :melee => 6, :ranged => 0 },
       :archer => { :melee => 6, :ranged => 6 },
-      :thick_sludge => { :melee => 15, :ranged => 0 },
+      :thick_sludge => { :melee => 12, :ranged => 0 },
       :wizard => { :melee => 20, :ranged => 0 },
       :captive => { :melee => 0, :ranged => 0 }
     }
@@ -43,6 +43,7 @@ class Player
   end
 
   def can_fight?(enemy=@target, combat_type=:melee)
+    return true if enemy == :nothing
     return is_npc?(enemy) && warrior_do(:health) > @npcs[enemy][combat_type]
   end
 
@@ -68,7 +69,8 @@ class Player
                         :enemy => [],
                         :captive => [],
                         :bomb_captive => [],
-                        :strongest_foe => :captive
+                        :strongest_foe => :captive,
+                        :closest_foe => { :type => :nothing, :distance => 1000 }
                        }
 
     warrior_do(:listen).each { |space|
@@ -86,6 +88,9 @@ class Player
            @npcs[info[:type]].values.max > @npcs[@remaining_units[:strongest_foe]].values.max then
           @remaining_units[:strongest_foe] = info[:type]
         end
+        if info[:distance] < @remaining_units[:closest_foe][:distance] then
+          @remaining_units[:closest_foe] = info
+        end
       end
     }
   end
@@ -93,6 +98,7 @@ class Player
   def space_info(space)
     return {
             :direction => warrior_do(:direction_of,space),
+            :distance => warrior_do(:distance_of,space),
             :type => unit_in(space),
             :bomb => space.ticking?
            }

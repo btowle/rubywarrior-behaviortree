@@ -119,7 +119,7 @@ module Behavior
 
         #rest
         all_or_fail do
-          is { !can_fight? remaining_units[:strongest_foe] }
+          is { !can_fight? remaining_units[:closest_foe][:type] }
           is { adjacent_units[:enemy][:number] == 0 }
           execute { heal! }
         end
