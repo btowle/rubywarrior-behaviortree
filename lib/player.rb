@@ -70,6 +70,7 @@ class Player
                         :bomb_captive => [],
                         :strongest_foe => :captive
                        }
+
     warrior_do(:listen).each { |space|
       @remaining_units[:number] += 1
       info = space_info(space)
@@ -97,29 +98,35 @@ class Player
            }
   end
 
-  def feel_adjacent_enemies
-    adjacent_enemies = []
+  def get_adjacent(feature)
+    adjacent = []
     @directions.each { |d|
-      adjacent_enemies.push({ :direction => d, :type => unit_in(warrior_do(:feel,d))}) if warrior_do(:feel, d).enemy?
+      if is_feature?(warrior_do(:feel, d), feature) then
+        adjacent.push({ :direction => d, :type => unit_in(warrior_do(:feel,d))})
+      end
     }
 
-    adjacent_enemies
+    adjacent
   end
 
   def feel_adjacent_units
-    @adjacent_units = { :enemy => {
-                          :number => 0,
-                          :list => {
-                            :right => nil,
-                            :backward => nil,
-                            :left => nil,
-                            :forward => nil
-                          }
-                        }
-                      }
-    feel_adjacent_enemies.each { |enemy|
-      @adjacent_units[:enemy][:number] += 1
-      @adjacent_units[:enemy][:list][enemy[:direction]] = enemy[:type]
+    @adjacent_units[:total] = 0
+    [:enemy, :captive, :wall].each { |type|
+      @adjacent_units[type] = {
+                                :number => 0,
+                                :list => {
+                                  :right => nil,
+                                  :backward => nil,
+                                  :left => nil,
+                                  :forward => nil
+                                }
+                              }
+
+      get_adjacent(type).each { |unit|
+        @adjacent_units[:total] += 1
+        @adjacent_units[type][:number] += 1
+        @adjacent_units[type][:list][unit[:direction]] = unit[:type]
+      }
     }
 
     @adjacent_units
