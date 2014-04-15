@@ -72,25 +72,23 @@ class Player
                         :number => 0,
                         :enemy => [],
                         :captive => [],
-                        :bomb_captive => [],
+                        :ticking => [],
                         :strongest_foe => :captive,
                         :closest_foe => { :type => :nothing, :distance => 1000 }
                        }
 
     warrior_do(:listen).each { |space|
       @remaining_units[:number] += 1
-      info = space_info(space)
-      if info[:type] == :captive then
-        if info[:bomb] then
-          @remaining_units[:bomb_captive].push info
-        else
-          @remaining_units[:captive].push info
-        end
+      info = space_info space
+
+      if unit_in(space) == :captive then
+        @remaining_units[:ticking].push(info) if is_feature?(space, :ticking)
+        @remaining_units[:captive].push info
       else
         @remaining_units[:enemy].push info
         if @remaining_units[:strongest_foe] == :captive ||
-           @npcs[info[:type]].values.max > @npcs[@remaining_units[:strongest_foe]].values.max then
-          @remaining_units[:strongest_foe] = info[:type]
+           @npcs[unit_in(space)].values.max > @npcs[@remaining_units[:strongest_foe]].values.max then
+          @remaining_units[:strongest_foe] = unit_in(space)
         end
         if info[:distance] < @remaining_units[:closest_foe][:distance] then
           @remaining_units[:closest_foe] = info
@@ -103,8 +101,7 @@ class Player
     return {
             :direction => warrior_do(:direction_of,space),
             :distance => warrior_do(:distance_of,space),
-            :type => unit_in(space),
-            :bomb => space.ticking?
+            :type => unit_in(space)
            }
   end
 

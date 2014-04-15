@@ -12,8 +12,8 @@ module Behavior
       #choose direction
       pass_after_first_pass do
         fail_after_first_fail do
-          is? { remaining_units[:bomb_captive].count > 0 }
-          execute { change_direction remaining_units[:bomb_captive][0][:direction] }
+          is? { remaining_units[:ticking].count > 0 }
+          execute { change_direction remaining_units[:ticking][0][:direction] }
         end
         fail_after_first_fail do
           is? { remaining_units[:captive].count > 0 }
@@ -30,7 +30,7 @@ module Behavior
       pass_after_first_pass do
         #rush to bombs
         fail_after_first_fail do
-          is? { remaining_units[:bomb_captive].count > 0 }
+          is? { remaining_units[:ticking].count > 0 }
           is? { not_facing? :ticking }
           pass_after_first_pass do
             #rest if can't bomb
