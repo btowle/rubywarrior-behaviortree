@@ -21,48 +21,31 @@ module BehaviorTree
     def initialize(rootnode)
       @target = @@target
 
-      rootnode ||= :all
-
-      case rootnode
-      when :all
-        @root = BehaviorTree::All.new
-      when :all_or_fail
-        @root = BehaviorTree::Sequencer.new
-      when :any_or_fail
-        @root = BehaviorTree::Priority.new
-      else
-        @root = rootnode
-      end
-    end
-
-    def any_or_fail(&block)
-      node = BehaviorTree::Priority.new
-      @root.add_child! node
-      BehaviorTree.build(node,&block)
-    end
-
-    def all_or_fail(&block)
-      node = BehaviorTree::Sequencer.new
-      @root.add_child! node
-      BehaviorTree.build(node,&block)
-    end
-
-    def all(&block)
-      node = BehaviorTree::All.new
-      @root.add_child! node
-      BehaviorTree.build(node,&block)
+      @root = rootnode || BehaviorTree::Branch.new(:pass, :all)
     end
 
     def execute(&block)
       action { @target.instance_eval(&block) }
     end
 
-    def is(&block)
+    def is?(&block)
       condition { @target.instance_eval(&block) }
     end
 
     def method_missing(m, *args, &block)
-      if /\?$/.match(m) then
+      branch_regex =
+      /(?<result>pass|fail)
+          _after_(
+            (first_(?<children_result>pass|fail)) |
+            (?<all>all)
+          )
+      /x
+      if matches = branch_regex.match(m) then
+        exit_status_or_all = matches[:all] || matches[:children_result]
+        node = BehaviorTree::Branch.new matches[:result].to_sym, exit_status_or_all.to_sym
+        @root.add_child! node
+        BehaviorTree.build(node, &block)
+      elsif /\?$/.match(m) then
         condition { @target.send m, *args, &block }
       elsif @target then
         action { @target.send m ,*args ,&block }
@@ -71,19 +54,11 @@ module BehaviorTree
 
 private
     def action(&block)
-      @root.add_child!(BehaviorTree::Action.new(->{
-        yield
-
-        :success
-      }))
+      @root.add_child!(BehaviorTree::Leaf.new &block)
     end
 
     def condition(&block)
-      @root.add_child!(BehaviorTree::Condition.new(->{
-        return :success if yield
-
-        :failure
-      }))
+      @root.add_child!(BehaviorTree::Leaf.new &block)
     end
   end
 end

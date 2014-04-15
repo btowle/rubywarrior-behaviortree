@@ -3,63 +3,63 @@ module Behavior
     BehaviorTree.target = self
     @npcs[:sludge][:melee] = 9
 
-    BehaviorTree.build(:all) do
+    BehaviorTree.build do
       #always face stairs
       #sense enemies
       execute { feel_adjacent_units }
       execute { listen_for_units }
 
       #choose direction
-      any_or_fail do
-        all_or_fail do
-          is { remaining_units[:bomb_captive].count > 0 }
+      pass_after_first_pass do
+        fail_after_first_fail do
+          is? { remaining_units[:bomb_captive].count > 0 }
           execute { change_direction remaining_units[:bomb_captive][0][:direction] }
         end
-        all_or_fail do
-          is { remaining_units[:captive].count > 0 }
+        fail_after_first_fail do
+          is? { remaining_units[:captive].count > 0 }
           execute { change_direction remaining_units[:captive][0][:direction] }
         end
-        all_or_fail do
-          is { remaining_units[:enemy].count > 0 }
+        fail_after_first_fail do
+          is? { remaining_units[:enemy].count > 0 }
           execute { change_direction remaining_units[:enemy][0][:direction] }
         end
         execute { change_direction(toward_stairs) }
       end
 
       #pick action
-      any_or_fail do
+      pass_after_first_pass do
         #rush to bombs
-        all_or_fail do
-          is { remaining_units[:bomb_captive].count > 0 }
-          is { not_facing? :ticking }
-          any_or_fail do
+        fail_after_first_fail do
+          is? { remaining_units[:bomb_captive].count > 0 }
+          is? { not_facing? :ticking }
+          pass_after_first_pass do
             #rest if can't bomb
-            all_or_fail do
-              is { not_can_survive_bomb? }
-              is { adjacent_units[:enemy][:number] == 0 }
-              is { not_alone? }
-              is { not_at? :captive }
+            fail_after_first_fail do
+              is? { not_can_survive_bomb? }
+              is? { adjacent_units[:enemy][:number] == 0 }
+              is? { not_alone? }
+              is? { not_at? :captive }
               execute { rest! }
             end
 
             #handle blocked path
-            all_or_fail do
-              is { way_blocked? }
-              any_or_fail do
+            fail_after_first_fail do
+              is? { way_blocked? }
+              pass_after_first_pass do
                 #fight through
-                all_or_fail do
-                  is { adjacent_units[:total] }
-                  any_or_fail do
+                fail_after_first_fail do
+                  is? { adjacent_units[:total] }
+                  pass_after_first_pass do
                     #bind enemies
-                    all_or_fail do
-                      is { adjacent_units[:enemy][:number] > 1 }
+                    fail_after_first_fail do
+                      is? { adjacent_units[:enemy][:number] > 1 }
                       execute { bind_adjacent! }
                     end
 
                     #fight
-                    any_or_fail do
-                      all_or_fail do
-                        is { good_bomb_target? }
+                    pass_after_first_pass do
+                      fail_after_first_fail do
+                        is? { good_bomb_target? }
                         execute { detonate! }
                       end
                       execute { attack! }
@@ -67,13 +67,13 @@ module Behavior
                   end
                 end
                 #walk around
-                all_or_fail do
+                fail_after_first_fail do
                   execute { rotate :left }
-                  all_or_fail do
-                    is { way_blocked? }
+                  fail_after_first_fail do
+                    is? { way_blocked? }
                     execute { rotate :right }
                     execute { rotate :right }
-                    is { way_blocked? }
+                    is? { way_blocked? }
                     execute { rotate :left }
                   end
                 end
@@ -84,55 +84,55 @@ module Behavior
         end
 
         #bind enemies
-        all_or_fail do
-          is { adjacent_units[:enemy][:number] > 1 }
+        fail_after_first_fail do
+          is? { adjacent_units[:enemy][:number] > 1 }
           execute { bind_adjacent! }
         end
 
         #throw bombs
-        all_or_fail do
-          is { good_bomb_target? }
+        fail_after_first_fail do
+          is? { good_bomb_target? }
           execute { detonate! }
         end
 
         #fight
-        all_or_fail do
-          is { adjacent_units[:enemy][:number] == 1 }
+        fail_after_first_fail do
+          is? { adjacent_units[:enemy][:number] == 1 }
           execute { face_adjacent :enemy }
           execute { attack! }
         end
 
         #handle bound units
-        all_or_fail do
-          is { way_blocked? }
-          any_or_fail do
-            all_or_fail do
-              is { unit_in_direction == :captive }
+        fail_after_first_fail do
+          is? { way_blocked? }
+          pass_after_first_pass do
+            fail_after_first_fail do
+              is? { unit_in_direction == :captive }
               execute { rescue! }
             end
-            all_or_fail do
-              is { can_fight? unit_in_direction }
+            fail_after_first_fail do
+              is? { can_fight? unit_in_direction }
               execute { attack! }
             end
           end
         end
 
         #rest
-        all_or_fail do
-          is { not_can_fight? remaining_units[:closest_foe][:type] }
-          is { adjacent_units[:enemy][:number] == 0 }
+        fail_after_first_fail do
+          is? { not_can_fight? remaining_units[:closest_foe][:type] }
+          is? { adjacent_units[:enemy][:number] == 0 }
           execute { rest! }
         end
 
         #move
-        any_or_fail do
+        pass_after_first_pass do
           #avoid early exit
-          all_or_fail do
-            is { facing? :stairs }
-            is { remaining_units[:captive].count > 0 || remaining_units[:enemy].count > 0 }
-            any_or_fail do
-              all_or_fail do
-                is { way_blocked? :right }
+          fail_after_first_fail do
+            is? { facing? :stairs }
+            is? { remaining_units[:captive].count > 0 || remaining_units[:enemy].count > 0 }
+            pass_after_first_pass do
+              fail_after_first_fail do
+                is? { way_blocked? :right }
                 execute { rotate :left }
               end
               execute { rotate :right }

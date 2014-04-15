@@ -1,8 +1,21 @@
 module BehaviorTree
-  module Selector
-    def selector_init
+  def self.opposite result
+    return :pass if result == :fail
+    return :fail if result == :pass
+  end
+
+  class Branch
+    def initialize(result, exit_state_or_all)
       @last_run_child = 0
       @children = Array.new
+
+      @exit_states = [:error, :running]
+      if exit_state_or_all == :all then
+        @default_return_state = result
+      else
+        @default_return_state = BehaviorTree.opposite result
+        @exit_states.push(exit_state_or_all)
+      end
     end
 
     def add_child!(child)
@@ -15,7 +28,6 @@ module BehaviorTree
         child_state = child.run
         if child_state == :running then
           @last_run_child = index
-          return :running
         end
         return child_state if @exit_states.include? child_state
       end
@@ -24,57 +36,14 @@ module BehaviorTree
     end
   end
 
-  class Priority
-    include Selector
-
-    def initialize
-      selector_init
-      @default_return_state = :failure
-      @exit_states = [:success, :error]
+  class Leaf
+    def initialize(&block)
+      @function = lambda &block
     end
-  end
-
-  class Sequencer
-    include Selector
-
-    def initialize
-      selector_init
-      @default_return_state = :success
-      @exit_states = [:failure, :running, :error]
-    end
-  end
-
-  class All
-    include Selector
-    def initialize
-      selector_init
-      @default_return_state = :success
-      @exit_states = []
-    end
-  end
-
-  module Leaf
     def run
-      return @test.() if @action.nil?
-      return @action.() if @test.nil? || @test.()
+      return :pass if @function.call
 
-      :failure
-    end
-  end
-
-  class Condition
-    include Leaf
-
-    def initialize(test)
-      @test = test
-    end
-  end
-
-  class Action
-    include Leaf
-    def initialize(action, test = nil)
-      @action = action
-      @test = test
+      :fail
     end
   end
 end

@@ -142,23 +142,12 @@ class Player
     @adjacent_units
   end
 
-  def on_adjacent(type, action=nil, &block)
+  def face_adjacent(type=:enemy)
     @adjacent_units[type][:list].each_pair { |direction, adjacent_type|
       if is_feature?(warrior_do(:feel, direction), type)then
-        if(action) then
-          warrior_do(action,direction)
-        else
-          yield direction, adjacent_type
-        end
-        break
+        return change_direction direction
       end
     }
-  end
-
-  def face_adjacent(type=:enemy)
-    on_adjacent(type) do |direction|
-      change_direction direction
-    end
   end
 
   def alone?
@@ -238,8 +227,8 @@ class Player
   end
 
   def change_direction(new_direction)
-    @direction = new_direction
     @npcs_behind = false
+    @direction = new_direction
   end
 
   def reverse
@@ -308,8 +297,7 @@ class Player
     define_method(name) do |type=:enemy|
       @adjacent_units[type][:list].each_pair { |direction, adjacent_type|
         if is_feature?(warrior_do(:feel, direction), type)then
-          warrior_do(method,direction)
-          break
+          return warrior_do(method,direction)
         end
       }
     end
@@ -344,7 +332,7 @@ class Player
   end
 
   def is_feature?(space, feature)
-    space.send(feature.to_s.concat("?").intern)
+    space.send(feature.to_s.concat("?").to_sym)
   end
 
 end
