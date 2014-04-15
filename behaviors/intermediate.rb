@@ -39,7 +39,7 @@ module Behavior
               is { adjacent_units[:enemy][:number] == 0 }
               is { !alone? }
               is { !at? :captive }
-              execute { heal! }
+              execute { rest! }
             end
 
             #handle blocked path
@@ -60,9 +60,9 @@ module Behavior
                     any_or_fail do
                       all_or_fail do
                         is { good_bomb_target? }
-                        execute { throw_bomb! }
+                        execute { detonate! }
                       end
-                      execute { combat! :melee }
+                      execute { attack! }
                     end
                   end
                 end
@@ -79,7 +79,7 @@ module Behavior
                 end
               end
             end
-            execute { advance! }
+            execute { walk! }
           end
         end
 
@@ -92,14 +92,14 @@ module Behavior
         #throw bombs
         all_or_fail do
           is { good_bomb_target? }
-          execute { throw_bomb! }
+          execute { detonate! }
         end
 
         #fight
         all_or_fail do
           is { adjacent_units[:enemy][:number] == 1 }
           execute { face_adjacent :enemy }
-          execute { combat! :melee }
+          execute { attack! }
         end
 
         #handle bound units
@@ -108,11 +108,11 @@ module Behavior
           any_or_fail do
             all_or_fail do
               is { unit_in_direction == :captive }
-              execute { save! }
+              execute { rescue! }
             end
             all_or_fail do
               is { can_fight? unit_in_direction }
-              execute { combat! :melee }
+              execute { attack! }
             end
           end
         end
@@ -121,7 +121,7 @@ module Behavior
         all_or_fail do
           is { !can_fight? remaining_units[:closest_foe][:type] }
           is { adjacent_units[:enemy][:number] == 0 }
-          execute { heal! }
+          execute { rest! }
         end
 
         #move
@@ -137,9 +137,9 @@ module Behavior
               end
               execute { rotate :right }
             end
-            execute { advance! }
+            execute { walk! }
           end
-          execute { advance! }
+          execute { walk! }
         end
       end
     end

@@ -138,17 +138,21 @@ class Player
     @adjacent_units
   end
 
-  def act_on_adjacent(type=:enemy,&block)
-    @adjacent_units[type][:list].each_pair { |direction, type|
-      if type then
-        yield direction, type
+  def on_adjacent(type, action=nil, &block)
+    @adjacent_units[type][:list].each_pair { |direction, adjacent_type|
+      if is_feature?(warrior_do(:feel, direction), type)then
+        if(action) then
+          warrior_do(action,direction)
+        else
+          yield direction, adjacent_type
+        end
         break
       end
     }
   end
 
   def face_adjacent(type=:enemy)
-    act_on_adjacent(:enemy) do |direction, type|
+    on_adjacent(type) do |direction|
       change_direction direction
     end
   end
@@ -231,17 +235,25 @@ class Player
     @direction = @directions[(@directions.find_index(@direction)+dir)%4]
   end
 
-  def change_direction(new_direction=opposite_direction)
+  def change_direction(new_direction)
     @direction = new_direction
     @npcs_behind = false
   end
 
-  def opposite_direction
-    case @direction
+  def reverse
+    change_direction opposite_direction
+  end
+
+  def opposite_direction(direction=@direction)
+    case direction
     when :forward
       return :backward
-    else
+    when :backward
       return :forward
+    when :right
+      return :left
+    else
+      return :right
     end
   end
 
@@ -257,43 +269,37 @@ class Player
     unit_in(warrior_do(:feel, direction))
   end
 
-  def about_face!
-    return unless warrior_do(:pivot!, @direction)
-    @direction = :forward
-  end
-
-  def save!
-    warrior_do :rescue!, @direction
-  end
-
-  def combat!(type)
-    case type
-    when :melee
-      warrior_do :attack!, @direction
-    when :ranged
-      warrior_do :shoot!, @direction
+  [:rest!, :health].each do |method|
+    define_method(method) do
+      warrior_do(method)
     end
   end
 
-  def heal!
-    warrior_do :rest!
+  [:direction_of, :direction_of_stairs ,:distance_of,
+   :feel, :listen, :look,
+   :attack!, :bind!, :detonate!, :shoot!,
+   :rescue!, :pivot!, :walk!].each do |method|
+    define_method(method) do |direction=@direction|
+      warrior_do(method, direction)
+    end
   end
 
-  def advance!
-    warrior_do :walk!, @direction
+  [:attack!, :bind!, :dentonate!, :pivot!,
+   :rescue!, :shoot!, :walk!].each do |method|
+    name = /[^\!]+/.match(method).to_s+"_adjacent!"
+    define_method(name) do |type=:enemy|
+      @adjacent_units[type][:list].each_pair { |direction, adjacent_type|
+        if is_feature?(warrior_do(:feel, direction), type)then
+          warrior_do(method,direction)
+          break
+        end
+      }
+    end
   end
 
-  def retreat!
-    warrior_do :walk!, opposite_direction
-  end
-
-  def throw_bomb! direction=@direction
-    warrior_do :detonate!, direction
-  end
-
-  def warrior_do ability, *args
+  def warrior_do ability, *direction
     return unless warrior_can? ability
-    @warrior.send ability, *args
+    @warrior.send ability, *direction
   end
 
   def warrior_can? ability
@@ -302,11 +308,5 @@ class Player
     puts "**WARNING** #{caller_locations(2,1)[0].label} requires warrior.#{ability}"
 
     false
-  end
-
-  def bind_adjacent!
-    act_on_adjacent(:enemy) do |direction, type|
-      warrior_do(:bind!, direction)
-    end
   end
 end

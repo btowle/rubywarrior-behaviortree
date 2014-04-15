@@ -9,7 +9,7 @@ module Behavior
           is { closest_target(:behind)[:distance] < closest_target(:ahead)[:distance] }
           is { closest_target(:ahead)[:type] != :archer }
           execute { set_target :behind }
-          execute { change_direction }
+          execute { reverse }
         end
         execute { set_target :ahead }
       end
@@ -20,7 +20,7 @@ module Behavior
         #rescue
         all_or_fail do
           is { facing? :captive }
-          execute { save! }
+          execute { rescue! }
         end
 
         #melee
@@ -29,9 +29,9 @@ module Behavior
           any_or_fail do
             all_or_fail {
               is { facing_enemy? }
-              execute { combat! :melee }
+              execute { attack! }
             }
-            execute { about_face! }
+            execute { pivot_adjacent! }
           end
         end
 
@@ -39,13 +39,13 @@ module Behavior
         all_or_fail do
           is { !can_fight? :sludge }
           is { !alone? }
-          execute { heal! }
+          execute { rest! }
         end
 
         #shoot
         all_or_fail do
           is { ranged_target? }
-          execute { combat! :ranged }
+          execute { shoot! }
         end
 
         #movement
@@ -54,13 +54,13 @@ module Behavior
           all_or_fail do
             is { at? :wall }
             is { !at? :stairs }
-            execute { change_direction }
+            execute { reverse }
             any_or_fail do
               all_or_fail {
                 is { ranged_target? }
-                execute { combat! :ranged }
+                execute { shoot! }
               }
-              execute { advance! }
+              execute { walk! }
             end
           end
 
@@ -69,18 +69,18 @@ module Behavior
             is { in_danger? }
             is { can_fight? }
             is { facing? :wall }
-            execute { retreat! }
+            execute { walk! opposite_direction }
           end
 
           #don't finish if we haven't cleared level
           all_or_fail do
             is { at? :stairs }
             is { !cleared? }
-            execute { change_direction }
-            execute { advance! }
+            execute { reverse }
+            execute { walk! }
           end
 
-          execute { advance! }
+          execute { walk! }
         end
       end
     end
