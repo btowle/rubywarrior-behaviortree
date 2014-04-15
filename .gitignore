@@ -3,3 +3,4 @@ README
 ./player.rb
 run
 log
+err
