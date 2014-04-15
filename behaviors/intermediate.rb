@@ -31,14 +31,14 @@ module Behavior
         #rush to bombs
         all_or_fail do
           is { remaining_units[:bomb_captive].count > 0 }
-          is { !facing? :ticking }
+          is { not_facing? :ticking }
           any_or_fail do
             #rest if can't bomb
             all_or_fail do
-              is { !can_survive_bomb? }
+              is { not_can_survive_bomb? }
               is { adjacent_units[:enemy][:number] == 0 }
-              is { !alone? }
-              is { !at? :captive }
+              is { not_alone? }
+              is { not_at? :captive }
               execute { rest! }
             end
 
@@ -119,7 +119,7 @@ module Behavior
 
         #rest
         all_or_fail do
-          is { !can_fight? remaining_units[:closest_foe][:type] }
+          is { not_can_fight? remaining_units[:closest_foe][:type] }
           is { adjacent_units[:enemy][:number] == 0 }
           execute { rest! }
         end

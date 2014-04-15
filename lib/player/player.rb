@@ -269,6 +269,14 @@ class Player
     unit_in(warrior_do(:feel, direction))
   end
 
+  [:alone?, :at?, :can_fight?, :can_survive_bomb?, :cleared?,
+   :facing?].each do |method|
+    name = "not_"+method.to_s
+    define_method(name) do |*args|
+      !self.send(method, *args)
+    end
+  end
+
   [:rest!, :health].each do |method|
     define_method(method) do
       warrior_do(method)

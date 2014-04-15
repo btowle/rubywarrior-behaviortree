@@ -37,8 +37,8 @@ module Behavior
 
         #rest
         all_or_fail do
-          is { !can_fight? :sludge }
-          is { !alone? }
+          is { not_can_fight? :sludge }
+          is { not_alone? }
           execute { rest! }
         end
 
@@ -53,7 +53,7 @@ module Behavior
           #change direction at walls
           all_or_fail do
             is { at? :wall }
-            is { !at? :stairs }
+            is { not_at? :stairs }
             execute { reverse }
             any_or_fail do
               all_or_fail {
@@ -75,7 +75,7 @@ module Behavior
           #don't finish if we haven't cleared level
           all_or_fail do
             is { at? :stairs }
-            is { !cleared? }
+            is { not_cleared? }
             execute { reverse }
             execute { walk! }
           end
