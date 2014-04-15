@@ -54,6 +54,23 @@ module BehaviorTree
     end
 
     def execute(&block)
+      action { @target.instance_eval(&block) }
+    end
+
+    def is(&block)
+      condition { @target.instance_eval(&block) }
+    end
+
+    def method_missing(m, *args, &block)
+      if /\?$/.match(m) then
+        condition { @target.send m, *args, &block }
+      elsif @target then
+        action { @target.send m ,*args ,&block }
+      end
+    end
+
+private
+    def action(&block)
       @root.add_child!(BehaviorTree::Action.new(->{
         yield
 
@@ -61,18 +78,12 @@ module BehaviorTree
       }))
     end
 
-    def is(&block)
+    def condition(&block)
       @root.add_child!(BehaviorTree::Condition.new(->{
         return :success if yield
 
         :failure
       }))
-    end
-
-    def method_missing(m, *args, &block)
-      if @target
-        @target.send m ,*args ,&block
-      end
     end
   end
 end

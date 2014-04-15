@@ -6,81 +6,81 @@ module Behavior
       #choose target
       any_or_fail do
         all_or_fail do
-          is { closest_target(:behind)[:distance] < closest_target(:ahead)[:distance] }
-          is { closest_target(:ahead)[:type] != :archer }
-          execute { set_target :behind }
-          execute { reverse }
+          target_behind_closest?
+          no_archer_ahead?
+          set_target :behind
+          reverse
         end
-        execute { set_target :ahead }
+        set_target :ahead
       end
 
-      execute { look_behind }
+      look_behind
 
       any_or_fail do
         #rescue
         all_or_fail do
-          is { facing? :captive }
-          execute { rescue! }
+          facing? :captive
+          rescue!
         end
 
         #melee
         all_or_fail do
-          is { facing? :enemy }
+          facing? :enemy
           any_or_fail do
             all_or_fail {
-              is { facing_enemy? }
-              execute { attack! }
+              facing_enemy?
+              attack!
             }
-            execute { pivot_adjacent! }
+            pivot_adjacent!
           end
         end
 
         #rest
         all_or_fail do
-          is { not_can_fight? :sludge }
-          is { not_alone? }
-          execute { rest! }
+          not_can_fight? :sludge
+          not_alone?
+          rest!
         end
 
         #shoot
         all_or_fail do
-          is { ranged_target? }
-          execute { shoot! }
+          ranged_target?
+          shoot!
         end
 
         #movement
         any_or_fail do
           #change direction at walls
           all_or_fail do
-            is { at? :wall }
-            is { not_at? :stairs }
-            execute { reverse }
+            at? :wall
+            not_at? :stairs
+            reverse
             any_or_fail do
               all_or_fail {
-                is { ranged_target? }
-                execute { shoot! }
+                ranged_target?
+                shoot!
               }
-              execute { walk! }
+              walk!
             end
           end
 
           #retreat if we need to
           all_or_fail do
-            is { in_danger? }
-            is { can_fight? }
-            is { facing? :wall }
-            execute { walk! opposite_direction }
+            in_danger?
+            can_fight?
+            facing? :wall
+            walk! opposite_direction
           end
 
           #don't finish if we haven't cleared level
           all_or_fail do
-            is { at? :stairs }
-            is { not_cleared? }
-            execute { reverse }
-            execute { walk! }
+            at? :stairs
+            not_cleared?
+            reverse
+            walk!
           end
 
-          execute { walk! }
+          walk!
         end
       end
     end

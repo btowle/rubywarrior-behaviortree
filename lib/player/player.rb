@@ -4,6 +4,10 @@ class Player
   include Behavior
   attr_reader :adjacent_units, :remaining_units
 
+  @@units = [ :sludge, :archer, :thick_sludge, :wizard, :captive ]
+  @@space_features = [ :wall, :warrior, :golem, :player, :enemy,
+                       :captive, :empty, :stairs, :ticking ]
+
   def initialize
     @direction = :backward
 
@@ -12,6 +16,8 @@ class Player
     @charge_range = 1
     @bomb_damage = 4
 
+    @directions = [ :forward, :right, :backward, :left ]
+
     @npcs = {
       :sludge => { :melee => 6, :ranged => 0 },
       :archer => { :melee => 6, :ranged => 6 },
@@ -19,8 +25,6 @@ class Player
       :wizard => { :melee => 20, :ranged => 0 },
       :captive => { :melee => 0, :ranged => 0 }
     }
-
-    @directions = [ :forward, :right, :backward, :left ]
 
     @npcs_behind = false
     @target = :nothing
@@ -167,23 +171,6 @@ class Player
     false
   end
 
-  def at?(feature)
-    get_view(@direction).each { |space|
-      return true if is_feature?(space, feature)
-      break unless space.empty?
-    }
-
-    false
-  end
-
-  def facing?(feature, direction=@direction)
-    is_feature? warrior_do(:feel, direction), feature
-  end
-
-  def is_feature?(space, feature)
-    space.send(feature.to_s.concat("?").intern)
-  end
-
   def cleared?
     !@npcs_behind
   end
@@ -214,6 +201,21 @@ class Player
     }
 
     return { :distance => target_distance, :type => target_type }
+  end
+
+  [:ahead, :behind].each do |direction|
+    @@units.each do |type|
+      name = type.to_s+"_"+direction.to_s+"?" #unit_ahead/behind?
+      define_method(name) do
+        return closest_target(direction)[:type] == type
+      end
+      define_method("no_"+name) do #no_unit_ahead/behind?
+        !send(name)
+      end
+    end
+    define_method("target_"+direction.to_s+"_closest?") do
+      closest_target(direction)[:distance] < closest_target(opposite_direction direction)[:distance]
+    end
   end
 
   def set_target(direction)
@@ -252,8 +254,12 @@ class Player
       return :forward
     when :right
       return :left
-    else
+    when :left
       return :right
+    when :ahead
+      return :behind
+    when :behind
+      return :ahead
     end
   end
 
@@ -269,6 +275,7 @@ class Player
     unit_in(warrior_do(:feel, direction))
   end
 
+  #not_booleans
   [:alone?, :at?, :can_fight?, :can_survive_bomb?, :cleared?,
    :facing?].each do |method|
     name = "not_"+method.to_s
@@ -277,12 +284,14 @@ class Player
     end
   end
 
+  #warrior methods with no arguments
   [:rest!, :health].each do |method|
     define_method(method) do
       warrior_do(method)
     end
   end
 
+  #warrior methods with arguments
   [:direction_of, :direction_of_stairs ,:distance_of,
    :feel, :listen, :look,
    :attack!, :bind!, :detonate!, :shoot!,
@@ -292,6 +301,7 @@ class Player
     end
   end
 
+  #warrior actions aimed at adjacent
   [:attack!, :bind!, :dentonate!, :pivot!,
    :rescue!, :shoot!, :walk!].each do |method|
     name = /[^\!]+/.match(method).to_s+"_adjacent!"
@@ -305,6 +315,8 @@ class Player
     end
   end
 
+#private
+
   def warrior_do ability, *direction
     return unless warrior_can? ability
     @warrior.send ability, *direction
@@ -317,4 +329,22 @@ class Player
 
     false
   end
+
+  def at?(feature)
+    get_view(@direction).each { |space|
+      return true if is_feature?(space, feature)
+      break unless space.empty?
+    }
+
+    false
+  end
+
+  def facing?(feature, direction=@direction)
+    is_feature? warrior_do(:feel, direction), feature
+  end
+
+  def is_feature?(space, feature)
+    space.send(feature.to_s.concat("?").intern)
+  end
+
 end
