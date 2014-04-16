@@ -114,7 +114,7 @@ module Behavior
           #avoid early exit
           branch :fail_after_first_fail do
             is? { facing? :stairs }
-            is? { remaining_units[:captive].count > 0 || remaining_units[:enemy].count > 0 }
+            not_cleared?
             branch :pass_after_first_pass do
               branch :fail_after_first_fail do
                 is? { way_blocked? :right }

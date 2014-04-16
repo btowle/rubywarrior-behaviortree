@@ -166,7 +166,7 @@ class Player
   end
 
   def cleared?
-    !@npcs_behind
+    !(@npcs_behind || (@remaining_units && @remaining_units[:number] > 0))
   end
 
   def way_blocked?(direction=@direction)
