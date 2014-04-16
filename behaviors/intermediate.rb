@@ -4,127 +4,114 @@ module Behavior
     @npcs[:sludge][:melee] = 9
 
     BehaviorTree.build do
-      #always face stairs
-      #sense enemies
-      execute { feel_adjacent_units }
-      execute { listen_for_units }
+      feel_adjacent_units
+      listen_for_units
 
-      #choose direction
-      branch :pass_after_first_pass do
+      branch :pass_after_first_pass, :choose_direction do
         branch :fail_after_first_fail do
-          is? { remaining_units[:ticking].count > 0 }
-          execute { change_direction remaining_units[:ticking][0][:direction] }
+          ticking_remaining?
+          face_remaining_ticking
         end
         branch :fail_after_first_fail do
-          is? { remaining_units[:captive].count > 0 }
-          execute { change_direction remaining_units[:captive][0][:direction] }
+          captive_remaining?
+          face_remaining_captive
         end
         branch :fail_after_first_fail do
-          is? { remaining_units[:enemy].count > 0 }
-          execute { change_direction remaining_units[:closest_foe][:direction] }
+          enemy_remaining?
+          face_remaining_enemy
         end
-        execute { change_direction(toward_stairs) }
+        face_toward_stairs
       end
 
-      #pick action
-      branch :pass_after_first_pass do
-        #rush to bombs
-        branch :fail_after_first_fail do
-          is? { remaining_units[:ticking].count > 0 }
-          is? { not_facing? :ticking }
+      branch :pass_after_first_pass, :pick_action do
+        branch :fail_after_first_fail, :rush_to_bombs do
+          ticking_remaining?
+          not_facing_ticking?
           branch :pass_after_first_pass do
-            #rest if can't bomb
-            branch :fail_after_first_fail do
-              is? { not_can_survive_bomb? }
-              is? { adjacent_units[:enemy][:number] == 0 }
-              is? { not_alone? }
-              is? { not_at? :captive }
-              execute { rest! }
+            branch :fail_after_first_fail, :panic_heal do
+              not_can_survive_bomb?
+              not_in_melee_range?
+              not_alone?
+              not_at_captive?
+              rest!
             end
 
-            #handle blocked path
-            branch :fail_after_first_fail do
-              is? { way_blocked? }
+            branch :fail_after_first_fail, :handle_blocked_path do
+              way_blocked?
               branch :pass_after_first_pass do
                 branch :fail_after_first_fail, :fight_through do
                   branch :pass_after_first_pass, :bind_or_fight do
                     branch :fail_after_first_fail, :bind_enemies do
-                      is? { adjacent_units[:enemy][:number] > 1 }
-                      execute { bind_adjacent! }
+                      outnumbered?
+                      bind_adjacent!
                     end
                     branch(:pass_after_first_pass, :bomb_or_fight) do
                       branch :fail_after_first_fail do
-                        is? { good_bomb_target? }
-                        execute { detonate! }
+                        good_bomb_target?
+                        detonate!
                       end
-                      execute { attack! }
+                      attack!
                     end
                   end
                 end
                 branch :fail_after_first_fail, :face_open_direction do
-                  execute { rotate :left }
+                  turn_left
                   branch :fail_after_first_fail do
-                    is? { way_blocked? }
-                    execute { rotate :right }
-                    execute { rotate :right }
-                    is? { way_blocked? }
-                    execute { rotate :left }
+                    way_blocked?
+                    turn_right
+                    turn_right
+                    way_blocked?
+                    turn_left
                   end
                 end
               end
             end
-            execute { walk! }
+            walk!
           end
         end
 
-        #bind enemies
         copy_branch :bind_enemies
 
-        #fight
-        branch :fail_after_first_fail do
-          is? { adjacent_units[:enemy][:number] == 1 }
-          execute { face_adjacent :enemy }
+        branch :fail_after_first_fail, :fight do
+          one_on_one?
+          face_adjacent_enemy
           copy_branch(:bomb_or_fight)
         end
 
-        #handle bound units
-        branch :fail_after_first_fail do
-          is? { way_blocked? }
+        branch :fail_after_first_fail, :handle_bound_units do
+          way_blocked?
           branch :pass_after_first_pass do
             branch :fail_after_first_fail do
-              is? { unit_in_direction == :captive }
-              execute { rescue! }
+              facing_captive?
+              rescue!
             end
             branch :fail_after_first_fail do
-              is? { can_fight? unit_in_direction }
-              execute { attack! }
+              can_fight?
+              attack!
             end
           end
         end
 
-        #rest
-        branch :fail_after_first_fail do
-          is? { not_can_fight? remaining_units[:closest_foe][:type] }
-          is? { adjacent_units[:enemy][:number] == 0 }
-          execute { rest! }
+        branch :fail_after_first_fail, :rest do
+          not_can_fight?
+          not_in_melee_range?
+          rest!
         end
 
-        #move
-        branch :pass_after_first_pass do
-          #avoid early exit
-          branch :fail_after_first_fail do
-            is? { facing? :stairs }
+        branch :pass_after_first_pass, :move do
+          branch :fail_after_first_fail, :avoid_early_exit do
+            facing_stairs?
             not_cleared?
             branch :pass_after_first_pass do
               branch :fail_after_first_fail do
-                is? { way_blocked? :right }
-                execute { rotate :left }
+                right_blocked?
+                turn_left
               end
-              execute { rotate :right }
+              turn_right
             end
-            execute { walk! }
+            walk!
           end
-          execute { walk! }
+          walk!
         end
       end
     end

@@ -17,12 +17,12 @@ module Behavior
 
       branch(:pass_after_first_pass, :choose_warrior_action){
         branch(:fail_after_first_fail, :try_rescue ){
-          facing? :captive
+          facing_captive?
           rescue!
         }
 
         branch(:fail_after_first_fail, :try_melee){
-          facing? :enemy
+          facing_enemy?
           branch(:pass_after_first_pass){
             branch(:fail_after_first_fail){
               facing_enemy?
@@ -55,7 +55,7 @@ module Behavior
           }
 
           branch(:fail_after_first_fail, :turn_around_if_not_clear){
-            at? :stairs
+            at_stairs?
             not_cleared?
             reverse
             walk!

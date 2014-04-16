@@ -7,6 +7,7 @@ class Player
   @@units = [ :sludge, :archer, :thick_sludge, :wizard, :captive ]
   @@space_features = [ :wall, :warrior, :golem, :player, :enemy,
                        :captive, :empty, :stairs, :ticking ]
+  @@directions = [ :forward, :right, :backward, :left ]
 
   def initialize
     @direction = :backward
@@ -16,7 +17,6 @@ class Player
     @charge_range = 1
     @bomb_damage = 4
 
-    @directions = [ :forward, :right, :backward, :left ]
 
     @npcs = {
       :sludge => { :melee => 6, :ranged => 0 },
@@ -27,7 +27,6 @@ class Player
     }
 
     @npcs_behind = false
-    @target = :nothing
     @adjacent_units = {}
 
     @behavior = get_behavior()
@@ -47,6 +46,7 @@ class Player
   end
 
   def can_fight?(enemy=@target, combat_type=:melee)
+    enemy ||= @remaining_units[:closest_foe][:type]
     return true if enemy == :nothing
     return is_npc?(enemy) && warrior_do(:health) > @npcs[enemy][combat_type]
   end
@@ -107,7 +107,7 @@ class Player
 
   def get_adjacent(feature)
     adjacent = []
-    @directions.each { |d|
+    @@directions.each { |d|
       if is_feature?(warrior_do(:feel, d), feature) then
         adjacent.push({ :direction => d, :type => unit_in(warrior_do(:feel,d))})
       end
@@ -147,12 +147,16 @@ class Player
     @adjacent_units
   end
 
-  def face_adjacent(type=:enemy)
-    @adjacent_units[type][:list].each_pair { |direction, adjacent_type|
-      if is_feature?(warrior_do(:feel, direction), type)then
-        return change_direction direction
-      end
-    }
+  def outnumbered?
+    @adjacent_units[:enemy][:number] > 1
+  end
+
+  def in_melee_range?
+    @adjacent_units[:enemy][:number] > 0
+  end
+
+  def one_on_one?
+    in_melee_range? && not_outnumbered?
   end
 
   def alone?
@@ -228,7 +232,13 @@ class Player
   def rotate(turn_direction=:right)
     dir = 1
     dir = -1 if turn_direction == :left
-    @direction = @directions[(@directions.find_index(@direction)+dir)%4]
+    @direction = @@directions[(@@directions.find_index(@direction)+dir)%4]
+  end
+
+  [:right, :left].each do |direction|
+    define_method("turn_"+direction.to_s) do
+      rotate direction
+    end
   end
 
   def change_direction(new_direction)
@@ -257,8 +267,8 @@ class Player
     end
   end
 
-  def toward_stairs
-    warrior_do(:direction_of_stairs)
+  def face_toward_stairs
+    change_direction warrior_do(:direction_of_stairs)
   end
 
   def unit_in(space)
@@ -270,11 +280,17 @@ class Player
   end
 
   #not_booleans
-  [:alone?, :at?, :can_fight?, :can_survive_bomb?, :cleared?,
-   :facing?].each do |method|
-    name = "not_"+method.to_s
-    define_method(name) do |*args|
-      !self.send(method, *args)
+  def method_missing m, *args, &block
+    if matches = /^not_(?<method_name>[^?\s]+\?)$/.match(m.to_s) then
+      !send(matches[:method_name], *args)
+    else
+      super
+    end
+  end
+
+  @@directions.each do |direction|
+    define_method(direction.to_s+"_blocked?") do
+      way_blocked?(direction)
     end
   end
 
@@ -308,8 +324,39 @@ class Player
     end
   end
 
-#private
+  @@space_features.each do |feature|
+    define_method("facing_"+feature.to_s+"?") do
+      return true if facing? feature
+    end
+    define_method("at_"+feature.to_s+"?") do
+      return true if at? feature
+    end
+  end
 
+  def facing_captive?
+    return true if unit_in_direction == :captive
+  end
+
+  [:ticking, :captive, :enemy].each do |type|
+    define_method(type.to_s+"_remaining?") do
+      return @remaining_units[type].count > 0
+    end
+    define_method("face_remaining_"+type.to_s) do
+      change_direction remaining_units[type][0][:direction]
+    end
+    define_method("adjacent_to_"+type.to_s+"?") do
+      @adjacent_units[type][:number] > 0
+    end
+    define_method("face_adjacent_"+type.to_s) do
+      @adjacent_units[type][:list].each_pair { |direction, adjacent_type|
+        if is_feature?(warrior_do(:feel, direction), type)then
+          return change_direction direction
+        end
+      }
+    end
+  end
+
+private
   def warrior_do ability, *direction
     return unless warrior_can? ability
     @warrior.send ability, *direction
