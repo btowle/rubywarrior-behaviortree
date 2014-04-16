@@ -4,7 +4,7 @@ module Behavior
 
     BehaviorTree.build do
       #choose target
-      pass_after_first_pass {
+      branch(:choose_target, :pass_after_all) {
         fail_after_first_fail {
           target_behind_closest?
           no_archer_ahead?
@@ -43,7 +43,7 @@ module Behavior
         }
 
         #shoot
-        fail_after_first_fail {
+        fail_after_first_fail(:shoot) {
           ranged_target?
           shoot!
         }
@@ -56,10 +56,7 @@ module Behavior
             not_at? :stairs
             reverse
             pass_after_first_pass {
-              fail_after_first_fail {
-                ranged_target?
-                shoot!
-              }
+              fail_after_first_fail (:shoot)
               walk!
             }
           }

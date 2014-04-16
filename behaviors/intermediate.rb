@@ -57,7 +57,7 @@ module Behavior
                     end
 
                     #fight
-                    pass_after_first_pass do
+                    pass_after_first_pass(:bomb_or_fight) do
                       fail_after_first_fail do
                         is? { good_bomb_target? }
                         execute { detonate! }
@@ -89,17 +89,11 @@ module Behavior
           execute { bind_adjacent! }
         end
 
-        #throw bombs
-        fail_after_first_fail do
-          is? { good_bomb_target? }
-          execute { detonate! }
-        end
-
         #fight
         fail_after_first_fail do
           is? { adjacent_units[:enemy][:number] == 1 }
           execute { face_adjacent :enemy }
-          execute { attack! }
+          copy_branch(:bomb_or_fight)
         end
 
         #handle bound units
