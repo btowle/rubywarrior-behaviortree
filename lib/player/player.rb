@@ -2,7 +2,6 @@ load(File.dirname(__FILE__)+"/../behaviortree/builder.rb")
 
 class Player
   include Behavior
-  attr_reader :adjacent_units, :remaining_units
 
   @@units = [ :sludge, :archer, :thick_sludge, :wizard, :captive ]
   @@space_features = [ :wall, :warrior, :golem, :player, :enemy,
@@ -37,22 +36,10 @@ class Player
     @behavior.run()
   end
 
-  def is_npc?(unit)
-    @npcs.keys.include? unit
-  end
-
-  def in_danger?
-    @target == :archer
-  end
-
   def can_fight?(enemy=@target, combat_type=:melee)
     enemy ||= @remaining_units[:closest_foe][:type]
     return true if enemy == :nothing
     return is_npc?(enemy) && warrior_do(:health) > @npcs[enemy][combat_type]
-  end
-
-  def out_of_charge_range?
-    @distance_to_target > @charge_range
   end
 
   def facing_enemy?
@@ -165,7 +152,7 @@ class Player
 
   def ranged_target?
     return true if [:wizard, :thick_sludge].include? @target
-    return true if in_danger? && @target == :archer && can_fight? && out_of_charge_range?
+    return true if @target == :archer && can_fight? && @distance_to_target > @charge_range
     false
   end
 
@@ -271,14 +258,6 @@ class Player
     change_direction warrior_do(:direction_of_stairs)
   end
 
-  def unit_in(space)
-    space.to_s.downcase.gsub(/\s+/, "_").to_sym
-  end
-
-  def unit_in_direction(direction=@direction)
-    unit_in(warrior_do(:feel, direction))
-  end
-
   #not_booleans
   def method_missing m, *args, &block
     if matches = /^not_(?<method_name>[^?\s]+\?)$/.match(m.to_s) then
@@ -342,7 +321,7 @@ class Player
       return @remaining_units[type].count > 0
     end
     define_method("face_remaining_"+type.to_s) do
-      change_direction remaining_units[type][0][:direction]
+      change_direction @remaining_units[type][0][:direction]
     end
     define_method("adjacent_to_"+type.to_s+"?") do
       @adjacent_units[type][:number] > 0
@@ -385,6 +364,18 @@ private
 
   def is_feature?(space, feature)
     space.send(feature.to_s.concat("?").to_sym)
+  end
+
+  def unit_in(space)
+    space.to_s.downcase.gsub(/\s+/, "_").to_sym
+  end
+
+  def unit_in_direction(direction=@direction)
+    unit_in(warrior_do(:feel, direction))
+  end
+
+  def is_npc?(unit)
+    @npcs.keys.include? unit
   end
 
 end
