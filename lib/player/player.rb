@@ -118,6 +118,7 @@ class Player
 
   def feel_adjacent_units
     @adjacent_units[:total] = 0
+    @adjacent_units[:strongest_foe] = :captive
     [:enemy, :captive, :wall].each { |type|
       @adjacent_units[type] = {
                                 :number => 0,
@@ -133,6 +134,13 @@ class Player
         @adjacent_units[:total] += 1
         @adjacent_units[type][:number] += 1
         @adjacent_units[type][:list][unit[:direction]] = unit[:type]
+
+        if type != :wall then
+          if @adjacent_units[:strongest_foe] == :captive ||
+             @npcs[unit[:type]].values.max > @npcs[@adjacent_units[:strongest_foe]].values.max then
+            @adjacent_units[:strongest_foe] = unit[:type]
+          end
+        end
       }
     }
 
@@ -286,14 +294,14 @@ class Player
       warrior_do(method, direction)
     end
   end
-
+  #[:walk!, :pivot!],[:rescue!]
   #warrior actions aimed at adjacent
-  [:attack!, :bind!, :dentonate!, :pivot!,
-   :rescue!, :shoot!, :walk!].each do |method|
+  [:attack!, :bind!, :dentonate!, :shoot!].each do |method|
     name = /[^\!]+/.match(method).to_s+"_adjacent!"
-    define_method(name) do |type=:enemy|
-      @adjacent_units[type][:list].each_pair { |direction, adjacent_type|
-        if is_feature?(warrior_do(:feel, direction), type)then
+    define_method(name) do
+      @adjacent_units[:enemy][:list].each_pair { |direction, adjacent_type|
+        if is_feature?(warrior_do(:feel, direction), :enemy) &&
+           adjacent_type == @adjacent_units[:strongest_foe] then
           return warrior_do(method,direction)
         end
       }

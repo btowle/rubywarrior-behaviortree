@@ -1,11 +1,10 @@
 module Behavior
   def get_behavior
-    BehaviorTree.target = self
+    BehaviorTree.parent = self
 
     BehaviorTree.build do
-      #choose target
-      branch(:choose_target, :pass_after_all) {
-        fail_after_first_fail {
+      branch(:pass_after_all, :choose_target) {
+        branch(:fail_after_first_fail) {
           target_behind_closest?
           no_archer_ahead?
           set_target :behind
@@ -16,18 +15,16 @@ module Behavior
 
       look_behind
 
-      pass_after_first_pass {
-        #rescue
-        fail_after_first_fail {
+      branch(:pass_after_first_pass, :choose_warrior_action){
+        branch(:fail_after_first_fail, :try_rescue ){
           facing? :captive
           rescue!
         }
 
-        #melee
-        fail_after_first_fail {
+        branch(:fail_after_first_fail, :try_melee){
           facing? :enemy
-          pass_after_first_pass {
-            fail_after_first_fail {
+          branch(:pass_after_first_pass){
+            branch(:fail_after_first_fail){
               facing_enemy?
               attack!
             }
@@ -35,42 +32,29 @@ module Behavior
           }
         }
 
-        #rest
-        fail_after_first_fail {
+        branch(:fail_after_first_fail, :try_heal){
           not_can_fight? :sludge
           not_alone?
           rest!
         }
 
-        #shoot
-        fail_after_first_fail(:shoot) {
+        branch(:fail_after_first_fail, :try_shoot) {
           ranged_target?
           shoot!
         }
 
-        #movement
-        pass_after_first_pass {
-          #change direction at walls
-          fail_after_first_fail {
+        branch(:pass_after_first_pass, :try_move){
+          branch(:fail_after_first_fail, :avoid_walls){
             at? :wall
             not_at? :stairs
             reverse
-            pass_after_first_pass {
-              fail_after_first_fail (:shoot)
+            branch(:pass_after_first_pass){
+              copy_branch(:try_shoot)
               walk!
             }
           }
 
-          #retreat if we need to
-          fail_after_first_fail {
-            in_danger?
-            can_fight?
-            facing? :wall
-            walk! opposite_direction
-          }
-
-          #don't finish if we haven't cleared level
-          fail_after_first_fail {
+          branch(:fail_after_first_fail, :turn_around_if_not_clear){
             at? :stairs
             not_cleared?
             reverse

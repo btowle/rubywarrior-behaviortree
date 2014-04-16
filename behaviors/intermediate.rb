@@ -1,6 +1,6 @@
 module Behavior
   def get_behavior
-    BehaviorTree.target = self
+    BehaviorTree.parent = self
     @npcs[:sludge][:melee] = 9
 
     BehaviorTree.build do
@@ -10,31 +10,31 @@ module Behavior
       execute { listen_for_units }
 
       #choose direction
-      pass_after_first_pass do
-        fail_after_first_fail do
+      branch :pass_after_first_pass do
+        branch :fail_after_first_fail do
           is? { remaining_units[:ticking].count > 0 }
           execute { change_direction remaining_units[:ticking][0][:direction] }
         end
-        fail_after_first_fail do
+        branch :fail_after_first_fail do
           is? { remaining_units[:captive].count > 0 }
           execute { change_direction remaining_units[:captive][0][:direction] }
         end
-        fail_after_first_fail do
+        branch :fail_after_first_fail do
           is? { remaining_units[:enemy].count > 0 }
-          execute { change_direction remaining_units[:enemy][0][:direction] }
+          execute { change_direction remaining_units[:closest_foe][:direction] }
         end
         execute { change_direction(toward_stairs) }
       end
 
       #pick action
-      pass_after_first_pass do
+      branch :pass_after_first_pass do
         #rush to bombs
-        fail_after_first_fail do
+        branch :fail_after_first_fail do
           is? { remaining_units[:ticking].count > 0 }
           is? { not_facing? :ticking }
-          pass_after_first_pass do
+          branch :pass_after_first_pass do
             #rest if can't bomb
-            fail_after_first_fail do
+            branch :fail_after_first_fail do
               is? { not_can_survive_bomb? }
               is? { adjacent_units[:enemy][:number] == 0 }
               is? { not_alone? }
@@ -43,22 +43,17 @@ module Behavior
             end
 
             #handle blocked path
-            fail_after_first_fail do
+            branch :fail_after_first_fail do
               is? { way_blocked? }
-              pass_after_first_pass do
-                #fight through
-                fail_after_first_fail do
-                  is? { adjacent_units[:total] }
-                  pass_after_first_pass do
-                    #bind enemies
-                    fail_after_first_fail do
+              branch :pass_after_first_pass do
+                branch :fail_after_first_fail, :fight_through do
+                  branch :pass_after_first_pass, :bind_or_fight do
+                    branch :fail_after_first_fail, :bind_enemies do
                       is? { adjacent_units[:enemy][:number] > 1 }
                       execute { bind_adjacent! }
                     end
-
-                    #fight
-                    pass_after_first_pass(:bomb_or_fight) do
-                      fail_after_first_fail do
+                    branch(:pass_after_first_pass, :bomb_or_fight) do
+                      branch :fail_after_first_fail do
                         is? { good_bomb_target? }
                         execute { detonate! }
                       end
@@ -66,10 +61,9 @@ module Behavior
                     end
                   end
                 end
-                #walk around
-                fail_after_first_fail do
+                branch :fail_after_first_fail, :face_open_direction do
                   execute { rotate :left }
-                  fail_after_first_fail do
+                  branch :fail_after_first_fail do
                     is? { way_blocked? }
                     execute { rotate :right }
                     execute { rotate :right }
@@ -84,27 +78,24 @@ module Behavior
         end
 
         #bind enemies
-        fail_after_first_fail do
-          is? { adjacent_units[:enemy][:number] > 1 }
-          execute { bind_adjacent! }
-        end
+        copy_branch :bind_enemies
 
         #fight
-        fail_after_first_fail do
+        branch :fail_after_first_fail do
           is? { adjacent_units[:enemy][:number] == 1 }
           execute { face_adjacent :enemy }
           copy_branch(:bomb_or_fight)
         end
 
         #handle bound units
-        fail_after_first_fail do
+        branch :fail_after_first_fail do
           is? { way_blocked? }
-          pass_after_first_pass do
-            fail_after_first_fail do
+          branch :pass_after_first_pass do
+            branch :fail_after_first_fail do
               is? { unit_in_direction == :captive }
               execute { rescue! }
             end
-            fail_after_first_fail do
+            branch :fail_after_first_fail do
               is? { can_fight? unit_in_direction }
               execute { attack! }
             end
@@ -112,20 +103,20 @@ module Behavior
         end
 
         #rest
-        fail_after_first_fail do
+        branch :fail_after_first_fail do
           is? { not_can_fight? remaining_units[:closest_foe][:type] }
           is? { adjacent_units[:enemy][:number] == 0 }
           execute { rest! }
         end
 
         #move
-        pass_after_first_pass do
+        branch :pass_after_first_pass do
           #avoid early exit
-          fail_after_first_fail do
+          branch :fail_after_first_fail do
             is? { facing? :stairs }
             is? { remaining_units[:captive].count > 0 || remaining_units[:enemy].count > 0 }
-            pass_after_first_pass do
-              fail_after_first_fail do
+            branch :pass_after_first_pass do
+              branch :fail_after_first_fail do
                 is? { way_blocked? :right }
                 execute { rotate :left }
               end
