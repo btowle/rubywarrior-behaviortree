@@ -6,11 +6,11 @@ module Behavior
       branch(:pass_after_all, :choose_target) {
         branch(:fail_after_first_fail) {
           target_behind_closest?
-          no_archer_ahead?
-          set_target :behind
+          not_archer_ahead?
+          set_target_behind
           reverse
         }
-        set_target :ahead
+        set_target_ahead
       }
 
       look_behind
@@ -45,8 +45,8 @@ module Behavior
 
         branch(:pass_after_first_pass, :try_move){
           branch(:fail_after_first_fail, :avoid_walls){
-            at? :wall
-            not_at? :stairs
+            at_wall?
+            not_at_stairs?
             reverse
             branch(:pass_after_first_pass){
               copy_branch(:try_shoot)
